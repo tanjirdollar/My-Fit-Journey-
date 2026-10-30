@@ -119,6 +119,29 @@ service cloud.firestore {
         && data.advice is string && data.advice.size() <= 10000;
     }
 
+    function isValidFavoriteFood(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.foodId is string && data.foodId.size() > 0 && data.foodId.size() <= 128
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    function isValidCustomFood(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 256
+        && data.nameBn is string && data.nameBn.size() > 0 && data.nameBn.size() <= 256
+        && data.category in ['staple', 'fish', 'meat_egg', 'dal_legume', 'vegetable_bhorta', 'dairy_drink', 'fruit_snack']
+        && data.defaultPortion is number && data.defaultPortion > 0 && data.defaultPortion <= 5000
+        && data.defaultUnit in ['grams', 'cup', 'katori', 'piece', 'tbsp', 'glass', 'plate']
+        && data.gramsPerUnit is number && data.gramsPerUnit >= 0 && data.gramsPerUnit <= 5000
+        && data.caloriesPer100gOrUnit is number && data.caloriesPer100gOrUnit >= 0 && data.caloriesPer100gOrUnit <= 5000
+        && data.proteinPer100gOrUnit is number && data.proteinPer100gOrUnit >= 0 && data.proteinPer100gOrUnit <= 500
+        && data.carbsPer100gOrUnit is number && data.carbsPer100gOrUnit >= 0 && data.carbsPer100gOrUnit <= 1000
+        && data.fatPer100gOrUnit is number && data.fatPer100gOrUnit >= 0 && data.fatPer100gOrUnit <= 500
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
     // Match root user document
     match /users/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
@@ -182,6 +205,20 @@ service cloud.firestore {
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId);
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /favorite_foods/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidFavoriteFood(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidFavoriteFood(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /custom_foods/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidCustomFood(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidCustomFood(incoming(), userId) && incoming().userId == existing().userId;
       }
     }
   }

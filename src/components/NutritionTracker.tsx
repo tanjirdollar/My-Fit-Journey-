@@ -93,10 +93,15 @@ export const NutritionTracker: React.FC = () => {
   const { profile } = useAuth();
   const {
     nutritionLogs,
+    favoriteFoodIds: favorites,
+    customFoods,
     addNutrition,
     updateNutrition,
     deleteNutrition,
     copyYesterdayMeals,
+    toggleFavoriteFood,
+    addCustomFood,
+    deleteCustomFood,
   } = useFitnessData();
 
   const isBn = language === 'bn';
@@ -109,35 +114,6 @@ export const NutritionTracker: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMealType, setSelectedMealType] = useState<MealType>('breakfast');
-
-  // Favorites & user-created custom foods in localStorage
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('myfit_favorites');
-      return saved
-        ? JSON.parse(saved)
-        : [
-            'food_atta_roti',
-            'food_egg_boiled',
-            'food_brown_rice',
-            'food_rui_fish_curry',
-            'food_masoor_dal_thick',
-            'food_palong_shak',
-            'food_tok_doi',
-          ];
-    } catch {
-      return [];
-    }
-  });
-
-  const [customFoods, setCustomFoods] = useState<FoodItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('myfit_custom_foods');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
 
   // Serving Size & Nutrition Editor Modal State (used for both Add and Edit)
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -190,14 +166,8 @@ export const NutritionTracker: React.FC = () => {
     return list;
   }, [today, isBn]);
 
-  const toggleFavorite = (foodId: string) => {
-    setFavorites((prev) => {
-      const next = prev.includes(foodId)
-        ? prev.filter((id) => id !== foodId)
-        : [...prev, foodId];
-      localStorage.setItem('myfit_favorites', JSON.stringify(next));
-      return next;
-    });
+  const toggleFavorite = async (foodId: string) => {
+    await toggleFavoriteFood(foodId);
   };
 
   // Search and filter Bangladeshi foods
@@ -402,10 +372,9 @@ export const NutritionTracker: React.FC = () => {
       foodNameInput.trim() || (isBn ? 'নিজস্ব খাবার' : 'Custom Healthy Meal');
     const finalNameBn = foodNameBnInput.trim() || finalNameEn;
 
-    // Optionally save to custom food database
+    // Optionally save to custom food database (synced to Firestore + localStorage fallback)
     if (!activeFood && saveToCustomDb && foodNameInput.trim()) {
-      const newCustomItem: FoodItem = {
-        id: `custom_${Date.now()}`,
+      await addCustomFood({
         name: finalNameEn,
         nameBn: finalNameBn,
         category: customCategory,
@@ -424,10 +393,7 @@ export const NutritionTracker: React.FC = () => {
         isPerUnit: unit !== 'grams',
         waistGuidance: 'moderate',
         isCustom: true,
-      };
-      const updatedCustom = [newCustomItem, ...customFoods];
-      setCustomFoods(updatedCustom);
-      localStorage.setItem('myfit_custom_foods', JSON.stringify(updatedCustom));
+      });
     }
 
     if (editingLogId) {
@@ -1081,19 +1047,35 @@ export const NutritionTracker: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Quick 1-Tap Add Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleQuickAddFood(e, food)}
-                      className="min-h-[44px] min-w-[44px] rounded-xl bg-neutral-100 hover:bg-emerald-700 text-neutral-700 hover:text-white flex items-center justify-center shrink-0 transition-colors"
-                      title={
-                        isBn
-                          ? `${food.defaultPortion} ${unitLabel} সরাসরি যোগ করুন`
-                          : `Quick add ${food.defaultPortion} ${unitLabel}`
-                      }
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {food.isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCustomFood(food.id);
+                          }}
+                          className="min-h-[40px] min-w-[36px] rounded-xl text-neutral-300 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
+                          title={isBn ? 'নিজস্ব খাবার মুছে ফেলুন' : 'Delete custom food template'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {/* Quick 1-Tap Add Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickAddFood(e, food)}
+                        className="min-h-[44px] min-w-[44px] rounded-xl bg-neutral-100 hover:bg-emerald-700 text-neutral-700 hover:text-white flex items-center justify-center shrink-0 transition-colors"
+                        title={
+                          isBn
+                            ? `${food.defaultPortion} ${unitLabel} সরাসরি যোগ করুন`
+                            : `Quick add ${food.defaultPortion} ${unitLabel}`
+                        }
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })

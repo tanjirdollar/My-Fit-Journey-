@@ -41,6 +41,7 @@ export type ServingUnit =
 
 export interface FoodItem {
   id: string;
+  userId?: string;
   name: string;
   nameBn: string;
   category: FoodCategory;
@@ -60,7 +61,30 @@ export interface FoodItem {
   tipEn?: string;
   tipBn?: string;
   isCustom?: boolean;
+  createdAt?: string;
 }
+
+export interface FavoriteFoodRecord {
+  id: string;
+  userId: string;
+  foodId: string;
+  createdAt: string;
+}
+
+export type CsvExportCategory =
+  | 'all_zip'
+  | 'all_combined_csv'
+  | 'user_profile'
+  | 'body_measurements'
+  | 'nutrition_logs'
+  | 'exercise_logs'
+  | 'activity_logs'
+  | 'habit_logs'
+  | 'sleep_logs'
+  | 'health_records'
+  | 'ai_coach_notes'
+  | 'favorite_foods'
+  | 'custom_foods';
 
 export interface NutritionLog {
   id: string;

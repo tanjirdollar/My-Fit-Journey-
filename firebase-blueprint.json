@@ -173,6 +173,61 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "userId", "advice"]
+    },
+    "FavoriteFood": {
+      "title": "FavoriteFood",
+      "description": "User's favorite food item reference synced across devices.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "foodId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "foodId"]
+    },
+    "CustomFoodTemplate": {
+      "title": "CustomFoodTemplate",
+      "description": "User-created custom food template synced across devices.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 256 },
+        "nameBn": { "type": "string", "maxLength": 256 },
+        "category": {
+          "type": "string",
+          "enum": ["staple", "fish", "meat_egg", "dal_legume", "vegetable_bhorta", "dairy_drink", "fruit_snack"]
+        },
+        "defaultPortion": { "type": "number" },
+        "defaultUnit": {
+          "type": "string",
+          "enum": ["grams", "cup", "katori", "piece", "tbsp", "glass", "plate"]
+        },
+        "gramsPerUnit": { "type": "number" },
+        "caloriesPer100gOrUnit": { "type": "number" },
+        "proteinPer100gOrUnit": { "type": "number" },
+        "carbsPer100gOrUnit": { "type": "number" },
+        "fatPer100gOrUnit": { "type": "number" },
+        "isPerUnit": { "type": "boolean" },
+        "waistGuidance": { "type": "string", "enum": ["ideal", "moderate", "limit"] },
+        "isCustom": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "nameBn",
+        "category",
+        "defaultPortion",
+        "defaultUnit",
+        "gramsPerUnit",
+        "caloriesPer100gOrUnit",
+        "proteinPer100gOrUnit",
+        "carbsPer100gOrUnit",
+        "fatPer100gOrUnit"
+      ]
     }
   },
   "firestore": {
@@ -211,6 +266,14 @@
     "/users/{userId}/ai_coach_notes/{id}": {
       "schema": "AICoachNote",
       "description": "AI Health Coach advice history."
+    },
+    "/users/{userId}/favorite_foods/{id}": {
+      "schema": "FavoriteFood",
+      "description": "User's favorite food IDs synced across devices."
+    },
+    "/users/{userId}/custom_foods/{id}": {
+      "schema": "CustomFoodTemplate",
+      "description": "User's custom food templates synced across devices."
     }
   }
 }

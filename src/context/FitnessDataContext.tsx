@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import {
   db,
@@ -20,7 +20,12 @@ import {
   HealthRecord,
   AICoachNote,
   MealType,
+  FoodItem,
+  FavoriteFoodRecord,
+  CsvExportCategory,
 } from '../types';
+import { BENGALI_FOODS } from '../data/bengaliFoods';
+import { downloadCsvExport, triggerBrowserDownload } from '../utils/csvExport';
 
 export function getTodayDateStr(): string {
   const d = new Date();
@@ -65,7 +70,52 @@ export function getRecentDatesList(
   return list;
 }
 
-// Initial baseline mock data matching the 38-yo male user's brief
+export const DEFAULT_FAVORITE_FOOD_IDS: string[] = [
+  'food_atta_roti',
+  'food_egg_boiled',
+  'food_brown_rice',
+  'food_rui_fish_curry',
+  'food_masoor_dal_thick',
+  'food_palong_shak',
+  'food_tok_doi',
+];
+
+function sanitizeDocId(rawId: string): string {
+  const cleaned = rawId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  return cleaned || `id_${Date.now()}`;
+}
+
+function loadLocalFavorites(): string[] {
+  try {
+    const saved = localStorage.getItem('myfit_favorites');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return Array.from(new Set(parsed.filter((x) => typeof x === 'string' && x.trim().length > 0)));
+      }
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+  return DEFAULT_FAVORITE_FOOD_IDS;
+}
+
+function loadLocalCustomFoods(): FoodItem[] {
+  try {
+    const saved = localStorage.getItem('myfit_custom_foods');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((x) => x && typeof x.id === 'string' && typeof x.name === 'string');
+      }
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+  return [];
+}
+
+// Initial baseline data matching the 38-yo male user's brief
 const today = getTodayDateStr();
 const yesterday = getYesterdayDateStr();
 
@@ -347,24 +397,30 @@ interface FitnessDataContextType {
   sleepLogs: SleepLog[];
   healthRecords: HealthRecord[];
   aiCoachNotes: AICoachNote[];
+  favoriteFoodIds: string[];
+  customFoods: FoodItem[];
   loading: boolean;
-  
+
   // Mutations
   addNutrition: (item: Omit<NutritionLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   updateNutrition: (item: NutritionLog) => Promise<void>;
   deleteNutrition: (id: string) => Promise<void>;
   copyYesterdayMeals: (targetMeal?: MealType, targetDate?: string) => Promise<number>;
-  
+
+  toggleFavoriteFood: (foodId: string) => Promise<void>;
+  addCustomFood: (item: Omit<FoodItem, 'id' | 'userId' | 'createdAt'> & { id?: string }) => Promise<FoodItem>;
+  deleteCustomFood: (id: string) => Promise<void>;
+
   addExercise: (item: Omit<ExerciseLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   updateExercise: (item: ExerciseLog) => Promise<void>;
   deleteExercise: (id: string) => Promise<void>;
-  
+
   updateTodayActivity: (steps: number, walkMinutes: number, distanceKm: number, targetDate?: string) => Promise<void>;
-  
+
   addMeasurement: (item: Omit<BodyMeasurement, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   updateMeasurement: (item: BodyMeasurement) => Promise<void>;
   deleteMeasurement: (id: string) => Promise<void>;
-  
+
   incrementWater: (targetDate?: string | unknown) => Promise<void>;
   decrementWater: (targetDate?: string | unknown) => Promise<void>;
   incrementSittingBreak: (targetDate?: string | unknown) => Promise<void>;
@@ -373,19 +429,19 @@ interface FitnessDataContextType {
     habitKey: keyof Omit<HabitLog, 'id' | 'userId' | 'date' | 'waterGlasses' | 'sittingBreaks' | 'updatedAt'>,
     targetDate?: string
   ) => Promise<void>;
-  
+
   addSleep: (item: Omit<SleepLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   updateSleep: (item: SleepLog) => Promise<void>;
   deleteSleep: (id: string) => Promise<void>;
-  
+
   addHealthRecord: (item: Omit<HealthRecord, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   updateHealthRecord: (item: HealthRecord) => Promise<void>;
   deleteHealthRecord: (id: string) => Promise<void>;
-  
+
   saveAICoachNote: (note: Omit<AICoachNote, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
-  
+
   exportAllDataJson: () => void;
-  exportAllDataCsv: () => void;
+  exportAllDataCsv: (category?: CsvExportCategory) => void;
   resetAllData: () => Promise<void>;
 }
 
@@ -404,14 +460,31 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
   const [aiCoachNotes, setAiCoachNotes] = useState<AICoachNote[]>([]);
+  const [favoriteFoodIds, setFavoriteFoodIds] = useState<string[]>(() => loadLocalFavorites());
+  const [customFoods, setCustomFoods] = useState<FoodItem[]>(() => loadLocalCustomFoods());
 
-  // Load either from Firestore (if user signed in) or from localStorage/initial mock
+  // Refs to prevent duplicate concurrent migrations in strict mode
+  const migratingFavsRef = useRef<string | null>(null);
+  const migratingCustomRef = useRef<string | null>(null);
+
+  // Helper to remove undefined fields before writing to Firestore
+  const stripUndefined = <T extends Record<string, any>>(obj: T): T => {
+    const clean: Record<string, any> = {};
+    Object.keys(obj).forEach((key) => {
+      if (obj[key] !== undefined) {
+        clean[key] = obj[key];
+      }
+    });
+    return clean as T;
+  };
+
+  // Load either from Firestore (if user signed in) or from localStorage/initial baseline
   useEffect(() => {
     if (user) {
       setLoading(true);
       const uid = user.uid;
 
-      // Subcollection listeners with mandatory error handling
+      // Subcollection listeners with error handling and localStorage migration
       const unsubs = [
         onSnapshot(
           collection(db, `users/${uid}/nutrition_logs`),
@@ -477,6 +550,117 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           },
           (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/ai_coach_notes`)
         ),
+        // Real-time listener & one-time localStorage migration for Favorite Foods
+        onSnapshot(
+          collection(db, `users/${uid}/favorite_foods`),
+          async (snap) => {
+            const remoteRecords = snap.docs.map((d) => d.data() as FavoriteFoodRecord);
+            const remoteIds = Array.from(
+              new Set(remoteRecords.map((r) => r.foodId).filter(Boolean))
+            );
+
+            const migrationKey = `myfit_migrated_favorites_${uid}`;
+            const alreadyMigrated = localStorage.getItem(migrationKey) === 'true';
+
+            if (!alreadyMigrated && migratingFavsRef.current !== uid) {
+              migratingFavsRef.current = uid;
+              const localIds = loadLocalFavorites();
+              const mergedIds = Array.from(new Set([...remoteIds, ...localIds]));
+
+              // Write any local favorite IDs missing in Firestore (using deterministic doc IDs to prevent duplicates)
+              const missingInRemote = localIds.filter((id) => !remoteIds.includes(id));
+              try {
+                for (const foodId of missingInRemote) {
+                  const docId = sanitizeDocId(foodId);
+                  const favDoc: FavoriteFoodRecord = {
+                    id: docId,
+                    userId: uid,
+                    foodId,
+                    createdAt: new Date().toISOString(),
+                  };
+                  await setDoc(doc(db, `users/${uid}/favorite_foods`, docId), favDoc);
+                }
+                localStorage.setItem(migrationKey, 'true');
+              } catch (err) {
+                console.warn('Favorite foods migration deferred (offline or network issue):', err);
+              }
+
+              setFavoriteFoodIds(mergedIds);
+              localStorage.setItem('myfit_favorites', JSON.stringify(mergedIds));
+            } else {
+              setFavoriteFoodIds(remoteIds);
+              localStorage.setItem('myfit_favorites', JSON.stringify(remoteIds));
+            }
+          },
+          (err) => {
+            console.warn('Fallback to localStorage for favorite_foods:', err);
+            setFavoriteFoodIds(loadLocalFavorites());
+          }
+        ),
+        // Real-time listener & one-time localStorage migration for Custom Food Templates
+        onSnapshot(
+          collection(db, `users/${uid}/custom_foods`),
+          async (snap) => {
+            const remoteFoods = snap.docs.map((d) => d.data() as FoodItem);
+
+            // Deduplicate remote foods by id and normalized name
+            const seenIds = new Set<string>();
+            const dedupedRemote: FoodItem[] = [];
+            for (const item of remoteFoods) {
+              if (!seenIds.has(item.id)) {
+                seenIds.add(item.id);
+                dedupedRemote.push({ ...item, isCustom: true });
+              }
+            }
+
+            const migrationKey = `myfit_migrated_custom_foods_${uid}`;
+            const alreadyMigrated = localStorage.getItem(migrationKey) === 'true';
+
+            if (!alreadyMigrated && migratingCustomRef.current !== uid) {
+              migratingCustomRef.current = uid;
+              const localCustoms = loadLocalCustomFoods();
+              const existingNames = new Set(
+                dedupedRemote.map((f) => f.name.trim().toLowerCase())
+              );
+
+              const toMigrate = localCustoms.filter(
+                (lf) =>
+                  !seenIds.has(sanitizeDocId(lf.id)) &&
+                  !existingNames.has(lf.name.trim().toLowerCase())
+              );
+
+              try {
+                for (const lf of toMigrate) {
+                  const safeId = sanitizeDocId(lf.id);
+                  const cleanFood: FoodItem = stripUndefined({
+                    ...lf,
+                    id: safeId,
+                    userId: uid,
+                    isCustom: true,
+                    createdAt: lf.createdAt || new Date().toISOString(),
+                  });
+                  await setDoc(doc(db, `users/${uid}/custom_foods`, safeId), cleanFood);
+                  dedupedRemote.push(cleanFood);
+                  seenIds.add(safeId);
+                  existingNames.add(cleanFood.name.trim().toLowerCase());
+                }
+                localStorage.setItem(migrationKey, 'true');
+              } catch (err) {
+                console.warn('Custom foods migration deferred (offline or network issue):', err);
+              }
+            }
+
+            dedupedRemote.sort((a, b) =>
+              (b.createdAt || '').localeCompare(a.createdAt || '')
+            );
+            setCustomFoods(dedupedRemote);
+            localStorage.setItem('myfit_custom_foods', JSON.stringify(dedupedRemote));
+          },
+          (err) => {
+            console.warn('Fallback to localStorage for custom_foods:', err);
+            setCustomFoods(loadLocalCustomFoods());
+          }
+        ),
       ];
 
       setLoading(false);
@@ -502,6 +686,8 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSleepLogs(savedSleep ? JSON.parse(savedSleep) : INITIAL_SLEEP);
       setHealthRecords(savedHealth ? JSON.parse(savedHealth) : INITIAL_HEALTH_RECORDS);
       setAiCoachNotes(savedAi ? JSON.parse(savedAi) : []);
+      setFavoriteFoodIds(loadLocalFavorites());
+      setCustomFoods(loadLocalCustomFoods());
       setLoading(false);
     }
   }, [user]);
@@ -517,6 +703,8 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       localStorage.setItem('myfit_demo_sleep', JSON.stringify(sleepLogs));
       localStorage.setItem('myfit_demo_health', JSON.stringify(healthRecords));
       localStorage.setItem('myfit_demo_ai', JSON.stringify(aiCoachNotes));
+      localStorage.setItem('myfit_favorites', JSON.stringify(favoriteFoodIds));
+      localStorage.setItem('myfit_custom_foods', JSON.stringify(customFoods));
     }
   }, [
     user,
@@ -528,20 +716,127 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     sleepLogs,
     healthRecords,
     aiCoachNotes,
+    favoriteFoodIds,
+    customFoods,
   ]);
 
-  // Helper to remove undefined fields before writing to Firestore
-  const stripUndefined = <T extends Record<string, any>>(obj: T): T => {
-    const clean: Record<string, any> = {};
-    Object.keys(obj).forEach((key) => {
-      if (obj[key] !== undefined) {
-        clean[key] = obj[key];
+  // Favorite & Custom Food Mutations (Firestore + localStorage fallback)
+  const toggleFavoriteFood = async (foodId: string) => {
+    if (!foodId) return;
+    const isCurrentlyFav = favoriteFoodIds.includes(foodId);
+    const nextFavs = isCurrentlyFav
+      ? favoriteFoodIds.filter((id) => id !== foodId)
+      : Array.from(new Set([...favoriteFoodIds, foodId]));
+
+    // Optimistic update + localStorage cache
+    setFavoriteFoodIds(nextFavs);
+    localStorage.setItem('myfit_favorites', JSON.stringify(nextFavs));
+
+    if (user) {
+      const docId = sanitizeDocId(foodId);
+      const docRef = doc(db, `users/${user.uid}/favorite_foods`, docId);
+      try {
+        if (isCurrentlyFav) {
+          await deleteDoc(docRef);
+        } else {
+          const favRecord: FavoriteFoodRecord = {
+            id: docId,
+            userId: user.uid,
+            foodId,
+            createdAt: new Date().toISOString(),
+          };
+          await setDoc(docRef, favRecord);
+        }
+      } catch (err) {
+        handleFirestoreError(
+          err,
+          isCurrentlyFav ? OperationType.DELETE : OperationType.CREATE,
+          `users/${user.uid}/favorite_foods/${docId}`
+        );
       }
-    });
-    return clean as T;
+    }
   };
 
-  // Mutations
+  const addCustomFood = async (
+    item: Omit<FoodItem, 'id' | 'userId' | 'createdAt'> & { id?: string }
+  ): Promise<FoodItem> => {
+    const normalizedName = item.name.trim().toLowerCase();
+    const normalizedNameBn = (item.nameBn || item.name).trim().toLowerCase();
+
+    // Prevent duplicate custom food entries: if a custom food with the same name already exists, reuse its ID
+    const existingDuplicate = customFoods.find(
+      (f) =>
+        (item.id && f.id === sanitizeDocId(item.id)) ||
+        f.name.trim().toLowerCase() === normalizedName ||
+        f.nameBn.trim().toLowerCase() === normalizedNameBn
+    );
+
+    const docId = existingDuplicate
+      ? existingDuplicate.id
+      : sanitizeDocId(item.id || `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
+
+    const userId = user ? user.uid : 'demo_user';
+    const createdAt = existingDuplicate?.createdAt || new Date().toISOString();
+
+    const newCustomFood: FoodItem = stripUndefined({
+      ...item,
+      id: docId,
+      userId,
+      name: item.name.trim(),
+      nameBn: (item.nameBn || item.name).trim(),
+      defaultPortion: Math.max(0.1, Number(item.defaultPortion) || 1),
+      gramsPerUnit: Math.max(0, Number(item.gramsPerUnit) || 100),
+      caloriesPer100gOrUnit: Math.max(0, Math.min(5000, Number(item.caloriesPer100gOrUnit) || 0)),
+      proteinPer100gOrUnit: Math.max(0, Math.min(500, Number(item.proteinPer100gOrUnit) || 0)),
+      carbsPer100gOrUnit: Math.max(0, Math.min(1000, Number(item.carbsPer100gOrUnit) || 0)),
+      fatPer100gOrUnit: Math.max(0, Math.min(500, Number(item.fatPer100gOrUnit) || 0)),
+      isCustom: true,
+      createdAt,
+    });
+
+    // Update local state & localStorage fallback immediately
+    setCustomFoods((prev) => {
+      const filtered = prev.filter((f) => f.id !== docId);
+      const updated = [newCustomFood, ...filtered];
+      localStorage.setItem('myfit_custom_foods', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/custom_foods`, docId);
+      try {
+        await setDoc(docRef, newCustomFood);
+      } catch (err) {
+        handleFirestoreError(
+          err,
+          existingDuplicate ? OperationType.UPDATE : OperationType.CREATE,
+          `users/${user.uid}/custom_foods/${docId}`
+        );
+      }
+    }
+
+    return newCustomFood;
+  };
+
+  const deleteCustomFood = async (id: string) => {
+    const safeId = sanitizeDocId(id);
+    setCustomFoods((prev) => {
+      const updated = prev.filter((f) => f.id !== id && f.id !== safeId);
+      localStorage.setItem('myfit_custom_foods', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/custom_foods`, safeId);
+      try {
+        await deleteDoc(docRef);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/custom_foods/${safeId}`);
+      }
+    }
+  };
+
+  // Nutrition Mutations
   const addNutrition = async (item: Omit<NutritionLog, 'id' | 'userId' | 'createdAt'>) => {
     const id = `nut_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
@@ -593,7 +888,6 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const copyYesterdayMeals = async (targetMeal?: MealType, targetDate?: string): Promise<number> => {
     const destDate = targetDate || getTodayDateStr();
-    // Compute previous day relative to destDate
     const d = new Date(`${destDate}T12:00:00`);
     d.setDate(d.getDate() - 1);
     const prevDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1000,10 +1294,20 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // Export functions
+  // Export functions (includes all 11 user data categories, no secrets/API keys)
   const exportAllDataJson = () => {
+    const allFoodsCatalog = [...customFoods, ...BENGALI_FOODS];
+    const resolvedFavorites = favoriteFoodIds.map((favId) => {
+      const found = allFoodsCatalog.find((f) => f.id === favId);
+      return found
+        ? { id: found.id, name: found.name, nameBn: found.nameBn, category: found.category }
+        : { id: favId };
+    });
+
+    const { uid: _omitUid, ...safeProfile } = profile;
+
     const exportData = {
-      profile,
+      profile: safeProfile,
       bodyMeasurements,
       nutritionLogs,
       exerciseLogs,
@@ -1012,45 +1316,39 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       sleepLogs,
       healthRecords,
       aiCoachNotes,
+      favoriteFoods: resolvedFavorites,
+      customFoodTemplates: customFoods,
       exportedAt: new Date().toISOString(),
     };
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json',
+      type: 'application/json;charset=utf-8;',
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `myfit_journey_backup_${getTodayDateStr()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerBrowserDownload(blob, `myfit_journey_backup_${getTodayDateStr()}.json`);
   };
 
-  const exportAllDataCsv = () => {
-    // Generate CSV for measurements and nutrition
-    let csvContent = 'Type,Date,Metric1,Metric2,Metric3,Notes\n';
-    bodyMeasurements.forEach((m) => {
-      csvContent += `"Measurement","${m.date}","Weight:${m.weightKg}kg","Waist:${m.waistCm}cm","BMI:${m.bmi}","${(m.notes || '').replace(/"/g, '""')}"\n`;
-    });
-    nutritionLogs.forEach((n) => {
-      csvContent += `"Nutrition","${n.date}","${n.mealType}","${n.foodName}","Cal:${n.calories} P:${n.protein}g","${(n.notes || '').replace(/"/g, '""')}"\n`;
-    });
-    exerciseLogs.forEach((e) => {
-      csvContent += `"Exercise","${e.date}","${e.exerciseType}","${e.name}","Duration:${e.durationMinutes}m RPE:${e.rpe}","${(e.notes || '').replace(/"/g, '""')}"\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `myfit_journey_export_${getTodayDateStr()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const exportAllDataCsv = (category: CsvExportCategory = 'all_zip') => {
+    downloadCsvExport(
+      {
+        profile,
+        bodyMeasurements,
+        nutritionLogs,
+        exerciseLogs,
+        activityLogs,
+        habitLogs,
+        sleepLogs,
+        healthRecords,
+        aiCoachNotes,
+        favoriteFoodIds,
+        customFoods,
+      },
+      getTodayDateStr(),
+      category
+    );
   };
 
   const resetAllData = async () => {
     if (user) {
-      // In Firestore, clear all subcollection logs for this user
       for (const item of nutritionLogs) await deleteNutrition(item.id);
       for (const item of exerciseLogs) await deleteExercise(item.id);
       for (const item of bodyMeasurements) await deleteMeasurement(item.id);
@@ -1111,11 +1409,16 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         sleepLogs,
         healthRecords,
         aiCoachNotes,
+        favoriteFoodIds,
+        customFoods,
         loading,
         addNutrition,
         updateNutrition,
         deleteNutrition,
         copyYesterdayMeals,
+        toggleFavoriteFood,
+        addCustomFood,
+        deleteCustomFood,
         addExercise,
         updateExercise,
         deleteExercise,
