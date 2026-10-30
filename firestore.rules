@@ -1,0 +1,188 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation functions
+    function isValidUserProfile(data, uid) {
+      return data.uid == uid
+        && (!('age' in data) || (data.age is number && data.age >= 10 && data.age <= 120))
+        && (!('heightCm' in data) || (data.heightCm is number && data.heightCm >= 50 && data.heightCm <= 250))
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128))
+        && (!('language' in data) || data.language in ['en', 'bn']);
+    }
+
+    function isValidNutritionLog(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && data.mealType in ['breakfast', 'lunch', 'snacks', 'dinner']
+        && data.foodName is string && data.foodName.size() <= 256
+        && data.calories is number && data.calories >= 0 && data.calories <= 5000
+        && data.protein is number && data.protein >= 0 && data.protein <= 500
+        && (!('carbs' in data) || (data.carbs is number && data.carbs >= 0 && data.carbs <= 1000))
+        && (!('fat' in data) || (data.fat is number && data.fat >= 0 && data.fat <= 500))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    function isValidExerciseLog(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && data.exerciseType is string && data.exerciseType.size() <= 64
+        && (!('sets' in data) || (data.sets is number && data.sets >= 0 && data.sets <= 100))
+        && (!('reps' in data) || (data.reps is number && data.reps >= 0 && data.reps <= 1000))
+        && (!('durationMinutes' in data) || (data.durationMinutes is number && data.durationMinutes >= 0 && data.durationMinutes <= 600))
+        && (!('rpe' in data) || (data.rpe is number && data.rpe >= 1 && data.rpe <= 10))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    function isValidActivityLog(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && (!('steps' in data) || (data.steps is number && data.steps >= 0 && data.steps <= 200000))
+        && (!('walkingDurationMinutes' in data) || (data.walkingDurationMinutes is number && data.walkingDurationMinutes >= 0 && data.walkingDurationMinutes <= 720))
+        && (!('distanceKm' in data) || (data.distanceKm is number && data.distanceKm >= 0 && data.distanceKm <= 100));
+    }
+
+    function isValidBodyMeasurement(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && data.waistCm is number && data.waistCm >= 30 && data.waistCm <= 250
+        && (!('weightKg' in data) || (data.weightKg is number && data.weightKg >= 20 && data.weightKg <= 300))
+        && (!('bmi' in data) || (data.bmi is number && data.bmi >= 10 && data.bmi <= 80))
+        && (!('waistToHeightRatio' in data) || (data.waistToHeightRatio is number && data.waistToHeightRatio >= 0.2 && data.waistToHeightRatio <= 1.5))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    function isValidHabitLog(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && (!('waterGlasses' in data) || (data.waterGlasses is number && data.waterGlasses >= 0 && data.waterGlasses <= 50))
+        && (!('sittingBreaks' in data) || (data.sittingBreaks is number && data.sittingBreaks >= 0 && data.sittingBreaks <= 50));
+    }
+
+    function isValidSleepLog(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && data.durationMinutes is number && data.durationMinutes >= 0 && data.durationMinutes <= 1440
+        && (!('quality' in data) || (data.quality is number && data.quality >= 1 && data.quality <= 5));
+    }
+
+    function isValidHealthRecord(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 16
+        && data.type in ['bp', 'glucose', 'hba1c', 'lipid', 'general']
+        && (!('systolic' in data) || (data.systolic is number && data.systolic >= 40 && data.systolic <= 300))
+        && (!('diastolic' in data) || (data.diastolic is number && data.diastolic >= 30 && data.diastolic <= 200))
+        && (!('pulse' in data) || (data.pulse is number && data.pulse >= 30 && data.pulse <= 250))
+        && (!('glucoseFasting' in data) || (data.glucoseFasting is number && data.glucoseFasting >= 1 && data.glucoseFasting <= 600))
+        && (!('glucosePostMeal' in data) || (data.glucosePostMeal is number && data.glucosePostMeal >= 1 && data.glucosePostMeal <= 600))
+        && (!('hba1c' in data) || (data.hba1c is number && data.hba1c >= 3 && data.hba1c <= 20))
+        && (!('reportNote' in data) || (data.reportNote is string && data.reportNote.size() <= 1000));
+    }
+
+    function isValidAICoachNote(data, userId) {
+      return data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.advice is string && data.advice.size() <= 10000;
+    }
+
+    // Match root user document
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId) && incoming().uid == existing().uid;
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollections under users/{userId}
+      match /nutrition_logs/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidNutritionLog(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidNutritionLog(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /exercise_logs/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidExerciseLog(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidExerciseLog(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /activity_logs/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidActivityLog(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidActivityLog(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /body_measurements/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidBodyMeasurement(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidBodyMeasurement(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /habit_logs/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHabitLog(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHabitLog(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /sleep_logs/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidSleepLog(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidSleepLog(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /health_records/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHealthRecord(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHealthRecord(incoming(), userId) && incoming().userId == existing().userId;
+      }
+
+      match /ai_coach_notes/{id} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId) && incoming().userId == existing().userId;
+      }
+    }
+  }
+}

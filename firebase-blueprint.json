@@ -1,0 +1,216 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with initial baseline anthropometrics, health goals, and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "heightCm": { "type": "number" },
+        "targetWeightKg": { "type": "number" },
+        "targetWaistCm": { "type": "number" },
+        "dailyCalorieTarget": { "type": "number" },
+        "dailyProteinTargetGrams": { "type": "number" },
+        "dailyStepsTarget": { "type": "number" },
+        "dailyWalkingMinutesTarget": { "type": "number" },
+        "dailyWaterTargetGlasses": { "type": "number" },
+        "weeklyWorkoutsTarget": { "type": "number" },
+        "language": { "type": "string", "enum": ["en", "bn"] },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "heightCm"]
+    },
+    "NutritionLog": {
+      "title": "NutritionLog",
+      "description": "Log of meals eaten during the day with macronutrients.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "mealType": { "type": "string", "enum": ["breakfast", "lunch", "snacks", "dinner"] },
+        "foodName": { "type": "string", "maxLength": 256 },
+        "foodNameBn": { "type": "string", "maxLength": 256 },
+        "portion": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 32 },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date", "mealType", "foodName", "calories", "protein"]
+    },
+    "ExerciseLog": {
+      "title": "ExerciseLog",
+      "description": "Log of exercise session including walking and bodyweight resistance training.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "exerciseType": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 128 },
+        "sets": { "type": "number" },
+        "reps": { "type": "number" },
+        "durationMinutes": { "type": "number" },
+        "rpe": { "type": "number" },
+        "caloriesBurned": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date", "exerciseType"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Manual step count, walking duration, and distance tracker.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "steps": { "type": "number" },
+        "walkingDurationMinutes": { "type": "number" },
+        "distanceKm": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date"]
+    },
+    "BodyMeasurement": {
+      "title": "BodyMeasurement",
+      "description": "Log of body measurements such as weight, waist circumference, and derived indicators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "weightKg": { "type": "number" },
+        "waistCm": { "type": "number" },
+        "bmi": { "type": "number" },
+        "waistToHeightRatio": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date", "waistCm"]
+    },
+    "HabitLog": {
+      "title": "HabitLog",
+      "description": "Daily tracking of hydration, sitting breaks, walks, and lifestyle habits.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "waterGlasses": { "type": "number" },
+        "sittingBreaks": { "type": "number" },
+        "walkingDone": { "type": "boolean" },
+        "exerciseDone": { "type": "boolean" },
+        "mealLogged": { "type": "boolean" },
+        "vegetableMet": { "type": "boolean" },
+        "sleepRoutineMet": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date"]
+    },
+    "SleepLog": {
+      "title": "SleepLog",
+      "description": "Daily sleep record with bedtime, wake time, and quality.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "bedtime": { "type": "string", "maxLength": 16 },
+        "wakeTime": { "type": "string", "maxLength": 16 },
+        "durationMinutes": { "type": "number" },
+        "quality": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date", "durationMinutes"]
+    },
+    "HealthRecord": {
+      "title": "HealthRecord",
+      "description": "Clinical health records such as blood pressure, glucose, HbA1c, and lipid profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "type": { "type": "string", "enum": ["bp", "glucose", "hba1c", "lipid", "general"] },
+        "systolic": { "type": "number" },
+        "diastolic": { "type": "number" },
+        "pulse": { "type": "number" },
+        "glucoseFasting": { "type": "number" },
+        "glucosePostMeal": { "type": "number" },
+        "hba1c": { "type": "number" },
+        "totalCholesterol": { "type": "number" },
+        "ldl": { "type": "number" },
+        "hdl": { "type": "number" },
+        "triglycerides": { "type": "number" },
+        "reportNote": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "date", "type"]
+    },
+    "AICoachNote": {
+      "title": "AICoachNote",
+      "description": "Saved AI coach recommendations and insights.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "focusArea": { "type": "string", "maxLength": 64 },
+        "advice": { "type": "string", "maxLength": 5000 },
+        "actionItems": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "advice"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with personal goals and preferences."
+    },
+    "/users/{userId}/nutrition_logs/{id}": {
+      "schema": "NutritionLog",
+      "description": "Meals and foods logged by the user."
+    },
+    "/users/{userId}/exercise_logs/{id}": {
+      "schema": "ExerciseLog",
+      "description": "Exercise and workout sessions logged by the user."
+    },
+    "/users/{userId}/activity_logs/{id}": {
+      "schema": "ActivityLog",
+      "description": "Daily walking, steps, and activity records."
+    },
+    "/users/{userId}/body_measurements/{id}": {
+      "schema": "BodyMeasurement",
+      "description": "Weight, waistline, and body composition history."
+    },
+    "/users/{userId}/habit_logs/{id}": {
+      "schema": "HabitLog",
+      "description": "Habit completion states and water logs."
+    },
+    "/users/{userId}/sleep_logs/{id}": {
+      "schema": "SleepLog",
+      "description": "Sleep logs and sleep quality records."
+    },
+    "/users/{userId}/health_records/{id}": {
+      "schema": "HealthRecord",
+      "description": "Clinical measurements and lab reports."
+    },
+    "/users/{userId}/ai_coach_notes/{id}": {
+      "schema": "AICoachNote",
+      "description": "AI Health Coach advice history."
+    }
+  }
+}
