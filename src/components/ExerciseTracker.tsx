@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useFitnessData, getTodayDateStr } from '../context/FitnessDataContext';
 import { EXERCISE_GUIDE, ExerciseDefinition } from '../data/exerciseGuide';
@@ -51,6 +51,12 @@ export const ExerciseTracker: React.FC = () => {
     todayActivity.distanceKm || 0
   );
   const [activitySaved, setActivitySaved] = useState<boolean>(false);
+
+  useEffect(() => {
+    setManualSteps(todayActivity.steps || 0);
+    setManualWalkMinutes(todayActivity.walkingDurationMinutes || 0);
+    setManualDistanceKm(todayActivity.distanceKm || 0);
+  }, [todayActivity.steps, todayActivity.walkingDurationMinutes, todayActivity.distanceKm]);
 
   // Today's exercises
   const todayExercises = exerciseLogs.filter((e) => e.date === today);

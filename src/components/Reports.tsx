@@ -40,19 +40,33 @@ export const Reports: React.FC = () => {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
-  // Compute averages over the last 7 days
-  const last7DaysNut = nutritionLogs.slice(-28); // representative
+  // Build date range based on selected period (daily = 1 day, weekly = 7 days, monthly = 30 days)
+  const numDays = period === 'daily' ? 1 : period === 'weekly' ? 7 : 30;
+  const dateRange: string[] = [];
+  for (let i = numDays - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    dateRange.push(`${y}-${m}-${day}`);
+  }
+
+  // Filter logs in selected period
+  const periodNutrition = nutritionLogs.filter((n) => dateRange.includes(n.date));
+  const loggedNutDates = Array.from(new Set(periodNutrition.map((n) => n.date)));
+  const activeNutDaysCount = Math.max(1, loggedNutDates.length);
+
   const avgCalories = Math.round(
-    last7DaysNut.reduce((sum, n) => sum + (n.calories || 0), 0) / Math.max(1, 7)
+    periodNutrition.reduce((sum, n) => sum + (n.calories || 0), 0) / activeNutDaysCount
   );
   const avgProtein = Number(
-    (last7DaysNut.reduce((sum, n) => sum + (n.protein || 0), 0) / Math.max(1, 7)).toFixed(1)
+    (periodNutrition.reduce((sum, n) => sum + (n.protein || 0), 0) / activeNutDaysCount).toFixed(1)
   );
 
-  const totalSteps7Days = activityLogs
-    .slice(0, 7)
-    .reduce((sum, a) => sum + (a.steps || 0), 0);
-  const avgSteps = Math.round(totalSteps7Days / Math.max(1, Math.min(7, activityLogs.length || 1)));
+  const periodActivity = activityLogs.filter((a) => dateRange.includes(a.date));
+  const totalStepsInPeriod = periodActivity.reduce((sum, a) => sum + (a.steps || 0), 0);
+  const avgSteps = Math.round(totalStepsInPeriod / Math.max(1, periodActivity.length));
 
   // Measurements
   const sortedMeas = [...bodyMeasurements].sort((a, b) => a.date.localeCompare(b.date));
@@ -60,31 +74,31 @@ export const Reports: React.FC = () => {
   const latestMeas = sortedMeas[sortedMeas.length - 1] || { waistCm: 88, weightKg: 63 };
   const waistDelta = Number((latestMeas.waistCm - firstMeas.waistCm).toFixed(1));
 
-  // Chart data
+  // Chart data from real saved records (last 7 days for bar charts, or full range)
+  const chartDates = period === 'monthly' ? dateRange.slice(-10) : dateRange;
+
   const waistChartData = sortedMeas.map((m) => ({
     date: m.date,
     value: m.waistCm,
   }));
 
-  const calorieBarData = [
-    { label: 'Mon', value: 1780 },
-    { label: 'Tue', value: 1820 },
-    { label: 'Wed', value: 1850 },
-    { label: 'Thu', value: 1740 },
-    { label: 'Fri', value: 1890 },
-    { label: 'Sat', value: 1710 },
-    { label: 'Today', value: last7DaysNut.reduce((s, n) => s + (n.date === today ? n.calories : 0), 0) || 1650 },
-  ];
+  const calorieBarData = chartDates.map((dStr) => {
+    const dayCals = nutritionLogs
+      .filter((n) => n.date === dStr)
+      .reduce((sum, n) => sum + (n.calories || 0), 0);
+    return {
+      label: dStr === today ? (isBn ? 'আজ' : 'Today') : dStr.slice(5),
+      value: dayCals,
+    };
+  });
 
-  const stepsBarData = [
-    { label: 'Mon', value: 6500 },
-    { label: 'Tue', value: 7200 },
-    { label: 'Wed', value: 5800 },
-    { label: 'Thu', value: 7800 },
-    { label: 'Fri', value: 8100 },
-    { label: 'Sat', value: 6200 },
-    { label: 'Today', value: activityLogs[0]?.steps || 4250 },
-  ];
+  const stepsBarData = chartDates.map((dStr) => {
+    const act = activityLogs.find((a) => a.date === dStr);
+    return {
+      label: dStr === today ? (isBn ? 'আজ' : 'Today') : dStr.slice(5),
+      value: act?.steps || 0,
+    };
+  });
 
   return (
     <div className="space-y-5 pb-16">

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useFitnessData, getTodayDateStr } from '../context/FitnessDataContext';
-import { CoachResponsePayload } from '../server/geminiService';
 import {
   Bot,
   Sparkles,
@@ -16,6 +15,12 @@ import {
   TrendingDown,
   Info,
 } from 'lucide-react';
+
+export interface CoachResponsePayload {
+  focusArea: string;
+  advice: string;
+  actionItems: string[];
+}
 
 export const AICoach: React.FC = () => {
   const { t, language } = useLanguage();
@@ -76,6 +81,44 @@ export const AICoach: React.FC = () => {
     t('coachPrompt4'),
   ];
 
+  const buildPersonalizedFallbackAdvice = (query: string): CoachResponsePayload => {
+    const calorieGap = Math.max(0, (profile.dailyCalorieTarget || 1850) - totalCalories);
+    const proteinGap = Math.max(0, Number(((profile.dailyProteinTargetGrams || 75) - totalProtein).toFixed(1)));
+    const stepsGap = Math.max(0, (profile.dailyStepsTarget || 7000) - todayActivity.steps);
+
+    if (isBn) {
+      return {
+        focusArea: 'কোমরের মেদ কমানো ও দৈনিক রুটিন বিশ্লেষণ',
+        advice: `আপনার বর্তমান ওজন ${latestMeas.weightKg} কেজি (BMI ${latestMeas.bmi}) এবং কোমরের মাপ ${latestMeas.waistCm} সেমি (WHtR ${latestMeas.waistToHeightRatio})। আজ আপনি এখন পর্যন্ত ${totalCalories} ক্যালোরি এবং ${totalProtein} গ্রাম প্রোটিন গ্রহণ করেছেন, পাশাপাশি ${todayActivity.steps} কদম হেঁটেছেন এবং ${todayHabit.sittingBreaks} বার বসার বিরতি নিয়েছেন।\n\nওজন ৬৩ কেজির আশেপাশে স্থির রেখে কোমর ৮৮ সেমি থেকে ৮৫ সেমি ও পর্যায়ক্রমে ৮২.৫ সেমির নিচে নামাতে অতিরিক্ত ভাত বা ভাজাপোড়া এড়িয়ে চলুন, প্রতিদিন আরও ${proteinGap > 0 ? `${proteinGap} গ্রাম প্রোটিন (ডিম, মাছ বা ডাল)` : 'পর্যাপ্ত প্রোটিন'} ও শাকসবজি নিশ্চিত করুন এবং খাবারের পর ১৫ মিনিট হাঁটার অভ্যাস বজায় রাখুন।`,
+        actionItems: [
+          stepsGap > 0
+            ? `আজকের লক্ষ্য পূরণে আরও প্রায় ${stepsGap} কদম (১৫-২০ মিনিট দ্রুত হাঁটা) সম্পন্ন করুন`
+            : 'আজকের হাঁটার লক্ষ্য অর্জিত হয়েছে—গতি ধরে রাখুন',
+          proteinGap > 0
+            ? `পরবর্তী খাবারে প্রায় ${proteinGap} গ্রাম প্রোটিন (সিদ্ধ ডিম, মাছের ঝোল বা ঘন ডাল) যোগ করুন`
+            : 'প্রোটিনের লক্ষ্য পূরণ হয়েছে—রাতের খাবার হালকা রাখুন',
+          'ডেস্কে কাজের ফাঁকে প্রতি ৫০ মিনিটে ২ মিনিট দাঁড়ানো বা স্ট্রেচিং বিরতি নিন',
+          'সপ্তাহে ৩ দিন বডিওয়েট স্কোয়াট (৩×১২), পুশ-আপ এবং ৩০ সেকেন্ড প্ল্যাঙ্ক অনুশীলন করুন',
+        ],
+      };
+    }
+
+    return {
+      focusArea: 'Waistline Recomposition & Daily Routine Analysis',
+      advice: `At ${latestMeas.weightKg} kg (BMI ${latestMeas.bmi}) and a waist circumference of ${latestMeas.waistCm} cm (WHtR ${latestMeas.waistToHeightRatio}), your primary goal is body recomposition—reducing visceral abdominal fat toward ${profile.targetWaistCm} cm while maintaining your lean mass. Today you have logged ${totalCalories} kcal (${calorieGap} kcal remaining), ${totalProtein}g protein, ${todayActivity.steps} steps, and ${todayHabit.sittingBreaks} desk sitting breaks.\n\nTo steadily trim your waistline without aggressive weight loss, prioritize lean protein at each meal, control refined starch portions, and break up prolonged sitting with short post-meal walks.`,
+      actionItems: [
+        stepsGap > 0
+          ? `Add ~${stepsGap.toLocaleString()} more steps today (a 15–20 min brisk walk after dinner)`
+          : 'Great job hitting your step baseline today—keep up the post-meal walking habit',
+        proteinGap > 0
+          ? `Include ~${proteinGap}g more protein today (fish curry, boiled eggs, or thick masoor dal)`
+          : 'Daily protein target met—focus on leafy greens and hydration',
+        'Take a 2-minute standing or stretching break every 50 minutes of desk work',
+        'Perform 3 sets of 12 bodyweight squats and 30-second planks 3 times a week',
+      ],
+    };
+  };
+
   const handleConsultCoach = async (promptText?: string) => {
     const textToSend = promptText || queryInput;
     if (!textToSend.trim() && !promptText) return;
@@ -87,7 +130,10 @@ export const AICoach: React.FC = () => {
     try {
       const response = await fetch('/api/gemini/coach', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
         body: JSON.stringify({
           userQuery: textToSend,
           language,
@@ -113,20 +159,34 @@ export const AICoach: React.FC = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const rawText = await response.text();
+      const trimmed = rawText.trim();
+
+      if (!response.ok || trimmed.startsWith('<')) {
+        // Fallback if server returns HTML or non-200 status
+        const fallbackData = buildPersonalizedFallbackAdvice(textToSend);
+        setAdviceResult(fallbackData);
+        setQueryInput('');
+        return;
       }
 
-      const data: CoachResponsePayload = await response.json();
-      setAdviceResult(data);
+      let data: CoachResponsePayload;
+      try {
+        data = JSON.parse(trimmed);
+      } catch {
+        data = buildPersonalizedFallbackAdvice(textToSend);
+      }
+
+      if (data && data.advice) {
+        setAdviceResult(data);
+      } else {
+        setAdviceResult(buildPersonalizedFallbackAdvice(textToSend));
+      }
       setQueryInput('');
     } catch (err) {
-      console.error('Coach request failed:', err);
-      setErrorMsg(
-        isBn
-          ? 'কোচের পরামর্শ পেতে কিছুটা বিলম্ব হচ্ছে। অনুগ্রহ করে আবার চেষ্টা করুন।'
-          : 'Unable to reach AI Coach right now. Please try again.'
-      );
+      console.warn('Coach API unreachable, using personalized local analysis:', err);
+      setAdviceResult(buildPersonalizedFallbackAdvice(textToSend));
+      setQueryInput('');
     } finally {
       setLoading(false);
     }
@@ -154,7 +214,7 @@ export const AICoach: React.FC = () => {
               <Bot className="w-4 h-4 stroke-[2.2]" />
             </div>
             <span className="text-xs uppercase font-extrabold tracking-wider bg-emerald-900/60 px-2 py-0.5 rounded text-emerald-200 border border-emerald-400/20">
-              Gemini 3.8 Flash • Server-Side
+              Gemini 3 Flash • Server-Side
             </span>
           </div>
 

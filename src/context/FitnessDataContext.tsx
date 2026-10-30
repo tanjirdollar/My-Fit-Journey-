@@ -154,8 +154,8 @@ const INITIAL_NUTRITION: NutritionLog[] = [
     userId: 'demo_user',
     date: today,
     mealType: 'lunch',
-    foodName: 'Palong Shak Bhaji (পালং শাক ভাজি)',
-    foodNameBn: 'পালং শাক ভাজি',
+    foodName: 'Palong Shak Bhaji / Spinach (পালং শাক ভাজি)',
+    foodNameBn: 'পালং শাক ভাজি (অল্প তেলে)',
     portion: 1,
     unit: 'katori',
     calories: 65,
@@ -164,6 +164,54 @@ const INITIAL_NUTRITION: NutritionLog[] = [
     fat: 3.5,
     notes: 'Spinach stir fry',
     createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'nut_y1',
+    userId: 'demo_user',
+    date: yesterday,
+    mealType: 'breakfast',
+    foodName: 'Whole Wheat Roti / Lal Attar Ruti (লাল আটার রুটি)',
+    foodNameBn: 'লাল আটার রুটি (মাঝারি)',
+    portion: 2,
+    unit: 'piece',
+    calories: 170,
+    protein: 6.2,
+    carbs: 35.0,
+    fat: 1.2,
+    notes: 'Morning roti',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'nut_y2',
+    userId: 'demo_user',
+    date: yesterday,
+    mealType: 'breakfast',
+    foodName: 'Egg Poach / Half-Fry Low Oil (ডিম পোচ - অল্প তেল)',
+    foodNameBn: 'ডিম পোচ (অল্প তেল)',
+    portion: 1,
+    unit: 'piece',
+    calories: 95,
+    protein: 6.4,
+    carbs: 0.5,
+    fat: 7.2,
+    notes: 'Low oil poach',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'nut_y3',
+    userId: 'demo_user',
+    date: yesterday,
+    mealType: 'dinner',
+    foodName: 'Chicken Breast Curry / Grilled (মুরগির বুকের মাংসের ঝোল/গ্রিল)',
+    foodNameBn: 'মুরগির বুকের মাংসের ঝোল বা গ্রিল',
+    portion: 1,
+    unit: 'cup',
+    calories: 185,
+    protein: 28.0,
+    carbs: 3.0,
+    fat: 6.2,
+    notes: 'High protein dinner',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
 ];
 
@@ -277,8 +325,9 @@ interface FitnessDataContextType {
   
   // Mutations
   addNutrition: (item: Omit<NutritionLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateNutrition: (item: NutritionLog) => Promise<void>;
   deleteNutrition: (id: string) => Promise<void>;
-  copyYesterdayMeals: (targetMeal?: MealType) => Promise<void>;
+  copyYesterdayMeals: (targetMeal?: MealType, targetDate?: string) => Promise<number>;
   
   addExercise: (item: Omit<ExerciseLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   deleteExercise: (id: string) => Promise<void>;
@@ -447,16 +496,27 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     aiCoachNotes,
   ]);
 
+  // Helper to remove undefined fields before writing to Firestore
+  const stripUndefined = <T extends Record<string, any>>(obj: T): T => {
+    const clean: Record<string, any> = {};
+    Object.keys(obj).forEach((key) => {
+      if (obj[key] !== undefined) {
+        clean[key] = obj[key];
+      }
+    });
+    return clean as T;
+  };
+
   // Mutations
   const addNutrition = async (item: Omit<NutritionLog, 'id' | 'userId' | 'createdAt'>) => {
     const id = `nut_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
-    const newLog: NutritionLog = {
+    const newLog: NutritionLog = stripUndefined({
       ...item,
       id,
       userId,
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/nutrition_logs`, id);
@@ -467,6 +527,20 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       setNutritionLogs((prev) => [newLog, ...prev]);
+    }
+  };
+
+  const updateNutrition = async (item: NutritionLog) => {
+    const cleanItem = stripUndefined(item);
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/nutrition_logs`, cleanItem.id);
+      try {
+        await setDoc(docRef, cleanItem, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/nutrition_logs/${cleanItem.id}`);
+      }
+    } else {
+      setNutritionLogs((prev) => prev.map((n) => (n.id === cleanItem.id ? cleanItem : n)));
     }
   };
 
@@ -483,17 +557,21 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  const copyYesterdayMeals = async (targetMeal?: MealType) => {
-    const yDate = getYesterdayDateStr();
-    const tDate = getTodayDateStr();
-    const yesterdayItems = nutritionLogs.filter((i) =>
-      i.date === yDate && (targetMeal ? i.mealType === targetMeal : true)
-    );
-    if (yesterdayItems.length === 0) return;
+  const copyYesterdayMeals = async (targetMeal?: MealType, targetDate?: string): Promise<number> => {
+    const destDate = targetDate || getTodayDateStr();
+    // Compute previous day relative to destDate
+    const d = new Date(`${destDate}T12:00:00`);
+    d.setDate(d.getDate() - 1);
+    const prevDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    for (const item of yesterdayItems) {
+    const sourceItems = nutritionLogs.filter(
+      (i) => i.date === prevDate && (targetMeal ? i.mealType === targetMeal : true)
+    );
+    if (sourceItems.length === 0) return 0;
+
+    for (const item of sourceItems) {
       await addNutrition({
-        date: tDate,
+        date: destDate,
         mealType: item.mealType,
         foodName: item.foodName,
         foodNameBn: item.foodNameBn,
@@ -503,20 +581,21 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         protein: item.protein,
         carbs: item.carbs,
         fat: item.fat,
-        notes: `Copied from yesterday's ${item.mealType}`,
+        notes: item.notes || `Copied from ${prevDate}`,
       });
     }
+    return sourceItems.length;
   };
 
   const addExercise = async (item: Omit<ExerciseLog, 'id' | 'userId' | 'createdAt'>) => {
     const id = `ex_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
-    const newLog: ExerciseLog = {
+    const newLog: ExerciseLog = stripUndefined({
       ...item,
       id,
       userId,
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/exercise_logs`, id);
@@ -547,7 +626,7 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const tDate = getTodayDateStr();
     const id = `act_${tDate}`;
     const userId = user ? user.uid : 'demo_user';
-    const actData: ActivityLog = {
+    const actData: ActivityLog = stripUndefined({
       id,
       userId,
       date: tDate,
@@ -556,7 +635,7 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       distanceKm,
       notes: 'Updated steps and activity log',
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/activity_logs`, id);
@@ -576,12 +655,12 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addMeasurement = async (item: Omit<BodyMeasurement, 'id' | 'userId' | 'createdAt'>) => {
     const id = `meas_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
-    const newLog: BodyMeasurement = {
+    const newLog: BodyMeasurement = stripUndefined({
       ...item,
       id,
       userId,
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/body_measurements`, id);
@@ -629,17 +708,18 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const saveHabit = async (habit: HabitLog) => {
+    const cleanHabit = stripUndefined(habit);
     if (user) {
-      const docRef = doc(db, `users/${user.uid}/habit_logs`, habit.id);
+      const docRef = doc(db, `users/${user.uid}/habit_logs`, cleanHabit.id);
       try {
-        await setDoc(docRef, habit);
+        await setDoc(docRef, cleanHabit);
       } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}/habit_logs/${habit.id}`);
+        handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}/habit_logs/${cleanHabit.id}`);
       }
     } else {
       setHabitLogs((prev) => {
-        const filtered = prev.filter((h) => h.id !== habit.id);
-        return [...filtered, habit];
+        const filtered = prev.filter((h) => h.id !== cleanHabit.id);
+        return [...filtered, cleanHabit];
       });
     }
   };
@@ -689,12 +769,12 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addSleep = async (item: Omit<SleepLog, 'id' | 'userId' | 'createdAt'>) => {
     const id = `sleep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
-    const newLog: SleepLog = {
+    const newLog: SleepLog = stripUndefined({
       ...item,
       id,
       userId,
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/sleep_logs`, id);
@@ -724,12 +804,12 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addHealthRecord = async (item: Omit<HealthRecord, 'id' | 'userId' | 'createdAt'>) => {
     const id = `hr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
-    const newLog: HealthRecord = {
+    const newLog: HealthRecord = stripUndefined({
       ...item,
       id,
       userId,
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/health_records`, id);
@@ -759,12 +839,12 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const saveAICoachNote = async (note: Omit<AICoachNote, 'id' | 'userId' | 'createdAt'>) => {
     const id = `coach_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const userId = user ? user.uid : 'demo_user';
-    const newNote: AICoachNote = {
+    const newNote: AICoachNote = stripUndefined({
       ...note,
       id,
       userId,
       createdAt: new Date().toISOString(),
-    };
+    });
 
     if (user) {
       const docRef = doc(db, `users/${user.uid}/ai_coach_notes`, id);
@@ -828,12 +908,45 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const resetAllData = async () => {
     if (user) {
-      // In Firestore, clear logs
+      // In Firestore, clear all subcollection logs for this user
       for (const item of nutritionLogs) await deleteNutrition(item.id);
       for (const item of exerciseLogs) await deleteExercise(item.id);
+      for (const item of bodyMeasurements) await deleteMeasurement(item.id);
+      for (const item of sleepLogs) await deleteSleep(item.id);
       for (const item of healthRecords) await deleteHealthRecord(item.id);
+      for (const item of activityLogs) {
+        const docRef = doc(db, `users/${user.uid}/activity_logs`, item.id);
+        try {
+          await deleteDoc(docRef);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/activity_logs/${item.id}`);
+        }
+      }
+      for (const item of habitLogs) {
+        const docRef = doc(db, `users/${user.uid}/habit_logs`, item.id);
+        try {
+          await deleteDoc(docRef);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/habit_logs/${item.id}`);
+        }
+      }
+      for (const item of aiCoachNotes) {
+        const docRef = doc(db, `users/${user.uid}/ai_coach_notes`, item.id);
+        try {
+          await deleteDoc(docRef);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/ai_coach_notes/${item.id}`);
+        }
+      }
     } else {
-      localStorage.clear();
+      localStorage.removeItem('myfit_demo_nutrition');
+      localStorage.removeItem('myfit_demo_exercise');
+      localStorage.removeItem('myfit_demo_activity');
+      localStorage.removeItem('myfit_demo_measurements');
+      localStorage.removeItem('myfit_demo_habits');
+      localStorage.removeItem('myfit_demo_sleep');
+      localStorage.removeItem('myfit_demo_health');
+      localStorage.removeItem('myfit_demo_ai');
       setNutritionLogs(INITIAL_NUTRITION);
       setExerciseLogs(INITIAL_EXERCISE);
       setActivityLogs(INITIAL_ACTIVITY);
@@ -841,6 +954,7 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setHabitLogs(INITIAL_HABITS);
       setSleepLogs(INITIAL_SLEEP);
       setHealthRecords(INITIAL_HEALTH_RECORDS);
+      setAiCoachNotes([]);
     }
   };
 
@@ -857,6 +971,7 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         aiCoachNotes,
         loading,
         addNutrition,
+        updateNutrition,
         deleteNutrition,
         copyYesterdayMeals,
         addExercise,

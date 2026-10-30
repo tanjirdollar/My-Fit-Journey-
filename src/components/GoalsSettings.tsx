@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -33,6 +33,20 @@ export const GoalsSettings: React.FC = () => {
   const [dailyWalkingMinutesTarget, setDailyWalkingMinutesTarget] = useState<number>(profile.dailyWalkingMinutesTarget || 35);
   const [dailyWaterTargetGlasses, setDailyWaterTargetGlasses] = useState<number>(profile.dailyWaterTargetGlasses || 9);
   const [weeklyWorkoutsTarget, setWeeklyWorkoutsTarget] = useState<number>(profile.weeklyWorkoutsTarget || 3);
+
+  useEffect(() => {
+    setDisplayName(profile.displayName || 'Tanjir');
+    setAge(profile.age || 38);
+    setHeightCm(profile.heightCm || 165);
+    setTargetWeightKg(profile.targetWeightKg || 63);
+    setTargetWaistCm(profile.targetWaistCm || 85);
+    setDailyCalorieTarget(profile.dailyCalorieTarget || 1850);
+    setDailyProteinTargetGrams(profile.dailyProteinTargetGrams || 75);
+    setDailyStepsTarget(profile.dailyStepsTarget || 7000);
+    setDailyWalkingMinutesTarget(profile.dailyWalkingMinutesTarget || 35);
+    setDailyWaterTargetGlasses(profile.dailyWaterTargetGlasses || 9);
+    setWeeklyWorkoutsTarget(profile.weeklyWorkoutsTarget || 3);
+  }, [profile]);
 
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 

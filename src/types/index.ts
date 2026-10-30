@@ -21,18 +21,45 @@ export interface UserProfile {
 
 export type MealType = 'breakfast' | 'lunch' | 'snacks' | 'dinner';
 
+export type FoodCategory =
+  | 'staple'
+  | 'fish'
+  | 'meat_egg'
+  | 'dal_legume'
+  | 'vegetable_bhorta'
+  | 'dairy_drink'
+  | 'fruit_snack';
+
+export type ServingUnit =
+  | 'grams'
+  | 'cup'
+  | 'katori'
+  | 'piece'
+  | 'tbsp'
+  | 'glass'
+  | 'plate';
+
 export interface FoodItem {
   id: string;
   name: string;
   nameBn: string;
-  category: 'staple' | 'protein' | 'vegetable' | 'dairy' | 'snack' | 'fruit' | 'beverage';
+  category: FoodCategory;
+  searchKeywords?: string[];
   defaultPortion: number;
-  defaultUnit: 'grams' | 'cup' | 'katori' | 'piece' | 'tbsp' | 'glass';
+  defaultUnit: ServingUnit;
+  /** Weight in grams of 1 defaultUnit (or 1 piece if piece-based) */
+  gramsPerUnit: number;
+  /** Nutrition values per 1 defaultUnit (or per 100g when defaultUnit is 'grams') */
   caloriesPer100gOrUnit: number;
   proteinPer100gOrUnit: number;
   carbsPer100gOrUnit: number;
   fatPer100gOrUnit: number;
-  isPerUnit?: boolean; // if true, nutrition is per 1 piece/cup rather than per 100g
+  fiberPer100gOrUnit?: number;
+  isPerUnit?: boolean;
+  waistGuidance?: 'ideal' | 'moderate' | 'limit';
+  tipEn?: string;
+  tipBn?: string;
+  isCustom?: boolean;
 }
 
 export interface NutritionLog {

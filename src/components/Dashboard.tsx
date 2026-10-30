@@ -448,7 +448,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
               <span>{t('aiCoachTitle')}</span>
               <span className="text-[10px] bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded font-mono font-semibold">
-                Gemini 3.8 Flash
+                Gemini 3 Flash
               </span>
             </div>
             <p className="text-xs text-neutral-700 mt-1 max-w-xl leading-relaxed">
