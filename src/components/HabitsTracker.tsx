@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { useFitnessData, getTodayDateStr } from '../context/FitnessDataContext';
+import {
+  useFitnessData,
+  getTodayDateStr,
+  getRecentDatesList,
+} from '../context/FitnessDataContext';
 import { SimpleBarChart } from './charts/SimpleBarChart';
 import {
   Droplets,
@@ -10,12 +14,14 @@ import {
   Circle,
   Plus,
   Minus,
-  Sparkles,
   Footprints,
   Salad,
   Moon,
   Dumbbell,
   Utensils,
+  Calendar,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 
 export const HabitsTracker: React.FC = () => {
@@ -26,12 +32,28 @@ export const HabitsTracker: React.FC = () => {
     incrementWater,
     decrementWater,
     incrementSittingBreak,
+    decrementSittingBreak,
     toggleHabitCheck,
   } = useFitnessData();
   const isBn = language === 'bn';
   const today = getTodayDateStr();
 
-  const todayHabit = habitLogs.find((h) => h.date === today) || {
+  // Date selection state (defaults to today's local date)
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const recentDates = getRecentDatesList(isBn, 7);
+
+  // Feedback state
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const showSuccess = (msg: string) => {
+    setErrorMsg(null);
+    setFeedbackMsg(msg);
+    setTimeout(() => setFeedbackMsg(null), 2500);
+  };
+
+  // Habits record for the currently selected date
+  const selectedDateHabit = habitLogs.find((h) => h.date === selectedDate) || {
     waterGlasses: 0,
     sittingBreaks: 0,
     walkingDone: false,
@@ -82,25 +104,179 @@ export const HabitsTracker: React.FC = () => {
     },
   ];
 
-  // Water weekly chart data (last 7 days)
-  const last7DaysData = habitLogs.slice(-7).map((h) => ({
+  const handleWaterIncrement = async () => {
+    try {
+      await incrementWater(selectedDate);
+      showSuccess(
+        isBn
+          ? `${selectedDate} তারিখের পানি পানের হিসাব আপডেট করা হয়েছে।`
+          : `Water intake updated for ${selectedDate}.`
+      );
+    } catch {
+      setErrorMsg(isBn ? 'আপডেট করতে সমস্যা হয়েছে।' : 'Failed to update water intake.');
+    }
+  };
+
+  const handleWaterDecrement = async () => {
+    try {
+      await decrementWater(selectedDate);
+      showSuccess(
+        isBn
+          ? `${selectedDate} তারিখের পানি পানের হিসাব আপডেট করা হয়েছে।`
+          : `Water intake updated for ${selectedDate}.`
+      );
+    } catch {
+      setErrorMsg(isBn ? 'আপডেট করতে সমস্যা হয়েছে।' : 'Failed to update water intake.');
+    }
+  };
+
+  const handleBreakIncrement = async () => {
+    try {
+      await incrementSittingBreak(selectedDate);
+      showSuccess(
+        isBn
+          ? `${selectedDate} তারিখের কাজের বিরতি যোগ করা হয়েছে।`
+          : `Sitting break recorded for ${selectedDate}.`
+      );
+    } catch {
+      setErrorMsg(isBn ? 'আপডেট করতে সমস্যা হয়েছে।' : 'Failed to update sitting breaks.');
+    }
+  };
+
+  const handleBreakDecrement = async () => {
+    try {
+      await decrementSittingBreak(selectedDate);
+      showSuccess(
+        isBn
+          ? `${selectedDate} তারিখের কাজের বিরতি কমানো হয়েছে।`
+          : `Sitting break adjusted for ${selectedDate}.`
+      );
+    } catch {
+      setErrorMsg(isBn ? 'আপডেট করতে সমস্যা হয়েছে।' : 'Failed to update sitting breaks.');
+    }
+  };
+
+  const handleToggleHabit = async (
+    key: 'walkingDone' | 'exerciseDone' | 'mealLogged' | 'vegetableMet' | 'sleepRoutineMet'
+  ) => {
+    try {
+      await toggleHabitCheck(key, selectedDate);
+      showSuccess(
+        isBn
+          ? `${selectedDate} তারিখের অভ্যাসের তালিকা আপডেট করা হয়েছে।`
+          : `Habit checklist updated for ${selectedDate}.`
+      );
+    } catch {
+      setErrorMsg(isBn ? 'আপডেট করতে সমস্যা হয়েছে।' : 'Failed to update habit checklist.');
+    }
+  };
+
+  // Water weekly chart data (sorted chronologically, last 7 logged days)
+  const sortedHabits = [...habitLogs].sort((a, b) => a.date.localeCompare(b.date));
+  const last7DaysData = sortedHabits.slice(-7).map((h) => ({
     label: h.date.slice(5),
     value: h.waterGlasses,
   }));
 
+  const completedCount = habitsList.filter((h) => !!selectedDateHabit[h.key]).length;
+
   return (
     <div className="space-y-5 pb-16">
-      {/* Habits Header */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-        <h2 className="text-xl font-black text-neutral-900 tracking-tight font-display">
-          {t('habits')} &amp; {isBn ? 'জীবনধারা' : 'Lifestyle Habits'}
-        </h2>
-        <p className="text-xs text-neutral-500 mt-0.5">
-          {isBn
-            ? 'স্থায়ীভাবে পেট কমাতে ও সুস্থ থাকতে দৈনন্দিন ছোট ছোট অভ্যাসের ধারাবাহিকতা'
-            : 'Sustainable fat reduction through daily hydration, sitting relief, and consistent routines.'}
-        </p>
+      {/* Habits Header & Date Selector */}
+      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-black text-neutral-900 tracking-tight font-display">
+              {t('habits')} &amp; {isBn ? 'জীবনধারা' : 'Lifestyle Habits'}
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {isBn
+                ? 'স্থায়ীভাবে পেট কমাতে ও সুস্থ থাকতে দৈনন্দিন ছোট ছোট অভ্যাসের ধারাবাহিকতা'
+                : 'Sustainable fat reduction through daily hydration, sitting relief, and consistent routines.'}
+            </p>
+          </div>
+
+          {/* Custom Date Input Picker */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="relative flex items-center">
+              <Calendar className="w-3.5 h-3.5 text-emerald-700 absolute left-3 pointer-events-none" />
+              <input
+                type="date"
+                value={selectedDate}
+                max={today}
+                onChange={(e) => {
+                  if (e.target.value) setSelectedDate(e.target.value);
+                }}
+                aria-label={isBn ? 'তারিখ নির্বাচন করুন' : 'Select date'}
+                className="pl-8 pr-3 py-1.5 bg-neutral-100 hover:bg-neutral-200/70 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
+              />
+            </div>
+            {selectedDate !== today && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(today)}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100 transition-colors"
+              >
+                {isBn ? 'আজ' : 'Today'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 7-Day Quick Date Selector Strip */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          {recentDates.map((d) => {
+            const isSelected = d.dateStr === selectedDate;
+            const hasHabitLog = habitLogs.some(
+              (h) =>
+                h.date === d.dateStr &&
+                (h.waterGlasses > 0 ||
+                  h.sittingBreaks > 0 ||
+                  h.walkingDone ||
+                  h.exerciseDone ||
+                  h.mealLogged ||
+                  h.vegetableMet ||
+                  h.sleepRoutineMet)
+            );
+            return (
+              <button
+                key={d.dateStr}
+                type="button"
+                onClick={() => setSelectedDate(d.dateStr)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${
+                  isSelected
+                    ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
+                    : 'bg-neutral-50 text-neutral-600 border-neutral-200/70 hover:bg-neutral-100'
+                }`}
+              >
+                <span>{d.isToday ? d.dayLabel : `${d.dayLabel} ${d.dayNum}`}</span>
+                {hasHabitLog && (
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isSelected ? 'bg-emerald-200' : 'bg-emerald-500'
+                    }`}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Feedback Banner */}
+      {feedbackMsg && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{feedbackMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       {/* Hydration Tracker Card */}
       <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
@@ -110,9 +286,18 @@ export const HabitsTracker: React.FC = () => {
               <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
                 <Droplets className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-extrabold text-neutral-900">
-                {isBn ? 'পানি পান ট্র্যাকার (Hydration)' : 'Daily Water Tracker'}
-              </h3>
+              <div>
+                <h3 className="text-sm font-extrabold text-neutral-900">
+                  {isBn ? 'পানি পান ট্র্যাকার (Hydration)' : 'Daily Water Tracker'}
+                </h3>
+                <span className="text-[10px] font-bold text-sky-700">
+                  {selectedDate === today
+                    ? isBn
+                      ? 'আজকের হিসাব'
+                      : 'Today'
+                    : selectedDate}
+                </span>
+              </div>
             </div>
             <p className="text-xs text-neutral-500 mt-1">
               {isBn
@@ -122,22 +307,27 @@ export const HabitsTracker: React.FC = () => {
           </div>
 
           <div className="text-right">
-            <span className="text-2xl font-black text-sky-900">{todayHabit.waterGlasses}</span>
+            <span className="text-2xl font-black text-sky-900">{selectedDateHabit.waterGlasses}</span>
             <span className="text-xs text-neutral-400 font-semibold"> / {waterTarget}</span>
             <div className="text-[10px] text-sky-700 font-medium">
-              ~{(todayHabit.waterGlasses * 0.25).toFixed(2)} Liters
+              ~{(selectedDateHabit.waterGlasses * 0.25).toFixed(2)} Liters
             </div>
           </div>
         </div>
 
         {/* Visual Glass Counter Grid */}
         <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 my-4">
-          {Array.from({ length: Math.max(waterTarget, todayHabit.waterGlasses) }).map((_, idx) => {
-            const isFilled = idx < todayHabit.waterGlasses;
+          {Array.from({ length: Math.max(waterTarget, selectedDateHabit.waterGlasses) }).map((_, idx) => {
+            const isFilled = idx < selectedDateHabit.waterGlasses;
             return (
               <button
                 key={idx}
-                onClick={isFilled && idx === todayHabit.waterGlasses - 1 ? decrementWater : incrementWater}
+                type="button"
+                onClick={
+                  isFilled && idx === selectedDateHabit.waterGlasses - 1
+                    ? handleWaterDecrement
+                    : handleWaterIncrement
+                }
                 className={`h-11 rounded-xl flex flex-col items-center justify-center border transition-all ${
                   isFilled
                     ? 'bg-sky-500 border-sky-600 text-white shadow-2xs scale-100'
@@ -155,8 +345,9 @@ export const HabitsTracker: React.FC = () => {
         {/* Action buttons */}
         <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
           <button
-            onClick={decrementWater}
-            disabled={todayHabit.waterGlasses === 0}
+            type="button"
+            onClick={handleWaterDecrement}
+            disabled={selectedDateHabit.waterGlasses === 0}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-40"
           >
             <Minus className="w-3.5 h-3.5" />
@@ -164,7 +355,8 @@ export const HabitsTracker: React.FC = () => {
           </button>
 
           <button
-            onClick={incrementWater}
+            type="button"
+            onClick={handleWaterIncrement}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -193,42 +385,63 @@ export const HabitsTracker: React.FC = () => {
           </div>
 
           <div className="text-right shrink-0">
-            <span className="text-2xl font-black text-amber-900">{todayHabit.sittingBreaks}</span>
+            <span className="text-2xl font-black text-amber-900">{selectedDateHabit.sittingBreaks}</span>
             <div className="text-[10px] text-neutral-400 font-semibold">{t('breakCounter')}</div>
           </div>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs text-amber-800 font-medium">
-            {isBn ? 'আজকের লক্ষ্য: অন্তত ৫-৬ বার বিরতি নেওয়া' : 'Target: 5-6 short breaks during workday'}
+            {isBn ? 'লক্ষ্য: অন্তত ৫-৬ বার বিরতি নেওয়া' : 'Target: 5-6 short breaks during workday'}
           </span>
-          <button
-            onClick={incrementSittingBreak}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all"
-          >
-            + {t('takeBreakNow')}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleBreakDecrement}
+              disabled={selectedDateHabit.sittingBreaks === 0}
+              className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-40"
+            >
+              <Minus className="w-3.5 h-3.5" />
+              <span>- 1</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBreakIncrement}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all"
+            >
+              + {t('takeBreakNow')}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Daily Habits Checklist */}
       <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-extrabold text-neutral-900">
-            {t('dailyChecklist')}
-          </h3>
-          <span className="text-xs text-neutral-500 font-medium">{today}</span>
+          <div>
+            <h3 className="text-sm font-extrabold text-neutral-900">
+              {t('dailyChecklist')}
+            </h3>
+            <p className="text-[11px] text-neutral-500">
+              {isBn
+                ? `সম্পন্ন হয়েছে: ${completedCount} / ${habitsList.length}`
+                : `Completed: ${completedCount} / ${habitsList.length}`}
+            </p>
+          </div>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-700">
+            {selectedDate}
+          </span>
         </div>
 
         <div className="space-y-2">
           {habitsList.map((habit) => {
             const Icon = habit.icon;
-            const isChecked = !!todayHabit[habit.key];
+            const isChecked = !!selectedDateHabit[habit.key];
 
             return (
               <div
                 key={habit.key}
-                onClick={() => toggleHabitCheck(habit.key)}
+                onClick={() => handleToggleHabit(habit.key)}
                 className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                   isChecked
                     ? 'bg-emerald-50/70 border-emerald-300'

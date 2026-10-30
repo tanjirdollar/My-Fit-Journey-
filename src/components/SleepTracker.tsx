@@ -1,39 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useFitnessData, getTodayDateStr } from '../context/FitnessDataContext';
+import { SleepLog } from '../types';
 import { SimpleBarChart } from './charts/SimpleBarChart';
 import {
   Moon,
   Sun,
-  Clock,
   Star,
   Trash2,
-  Plus,
   Check,
-  ShieldCheck,
-  Sparkles,
+  Pencil,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 
 export const SleepTracker: React.FC = () => {
   const { t, language } = useLanguage();
-  const { sleepLogs, addSleep, deleteSleep } = useFitnessData();
+  const { sleepLogs, addSleep, updateSleep, deleteSleep } = useFitnessData();
   const isBn = language === 'bn';
   const today = getTodayDateStr();
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Form states
+  const [editingSleep, setEditingSleep] = useState<SleepLog | null>(null);
   const [bedtime, setBedtime] = useState<string>('23:00');
   const [wakeTime, setWakeTime] = useState<string>('06:30');
   const [quality, setQuality] = useState<number>(4);
   const [notes, setNotes] = useState<string>('');
   const [date, setDate] = useState<string>(today);
-  const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const showSuccess = (msg: string) => {
+    setErrorMsg(null);
+    setFeedbackMsg(msg);
+    setTimeout(() => setFeedbackMsg(null), 3000);
+  };
 
   // Calculate duration automatically across midnight
   const calculateDurationMinutes = (start: string, end: string): number => {
+    if (!start || !end || !start.includes(':') || !end.includes(':')) return 0;
     const [startH, startM] = start.split(':').map(Number);
     const [endH, endM] = end.split(':').map(Number);
+    if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return 0;
 
-    let startTotal = startH * 60 + startM;
+    const startTotal = startH * 60 + startM;
     let endTotal = endH * 60 + endM;
 
     if (endTotal <= startTotal) {
@@ -45,19 +56,115 @@ export const SleepTracker: React.FC = () => {
   const calculatedMinutes = calculateDurationMinutes(bedtime, wakeTime);
   const calculatedHours = (calculatedMinutes / 60).toFixed(1);
 
+  const handleStartEdit = (log: SleepLog) => {
+    setEditingSleep(log);
+    setBedtime(log.bedtime);
+    setWakeTime(log.wakeTime);
+    setQuality(log.quality);
+    setDate(log.date);
+    setNotes(log.notes || '');
+    setErrorMsg(null);
+    setFeedbackMsg(null);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSleep(null);
+    setBedtime('23:00');
+    setWakeTime('06:30');
+    setQuality(4);
+    setDate(today);
+    setNotes('');
+    setErrorMsg(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addSleep({
-      date,
-      bedtime,
-      wakeTime,
-      durationMinutes: calculatedMinutes,
-      quality,
-      notes,
-    });
-    setSavedSuccess(true);
-    setNotes('');
-    setTimeout(() => setSavedSuccess(false), 2500);
+    setErrorMsg(null);
+
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setErrorMsg(
+        isBn ? 'অনুগ্রহ করে একটি সঠিক তারিখ নির্বাচন করুন।' : 'Please select a valid date.'
+      );
+      return;
+    }
+
+    if (!bedtime || !wakeTime) {
+      setErrorMsg(
+        isBn
+          ? 'ঘুমানোর সময় এবং ঘুম থেকে ওঠার সময় উল্লেখ করুন।'
+          : 'Please specify both bedtime and wake-up time.'
+      );
+      return;
+    }
+
+    if (calculatedMinutes <= 0 || calculatedMinutes > 1440) {
+      setErrorMsg(
+        isBn
+          ? 'ঘুমের সময়কাল ১ মিনিট থেকে ২৪ ঘণ্টার মধ্যে হতে হবে।'
+          : 'Sleep duration must be between 1 minute and 24 hours.'
+      );
+      return;
+    }
+
+    if (quality < 1 || quality > 5) {
+      setErrorMsg(
+        isBn ? 'ঘুমের মান ১ থেকে ৫ এর মধ্যে নির্বাচন করুন।' : 'Sleep quality must be between 1 and 5.'
+      );
+      return;
+    }
+
+    try {
+      if (editingSleep) {
+        await updateSleep({
+          ...editingSleep,
+          date,
+          bedtime,
+          wakeTime,
+          durationMinutes: calculatedMinutes,
+          quality,
+          notes: notes.trim(),
+        });
+        setEditingSleep(null);
+        setNotes('');
+        showSuccess(
+          isBn
+            ? 'ঘুমের রেকর্ড সফলভাবে আপডেট করা হয়েছে!'
+            : 'Sleep record updated successfully!'
+        );
+      } else {
+        await addSleep({
+          date,
+          bedtime,
+          wakeTime,
+          durationMinutes: calculatedMinutes,
+          quality,
+          notes: notes.trim(),
+        });
+        setNotes('');
+        showSuccess(
+          isBn ? 'ঘুমের রেকর্ড সংরক্ষিত হয়েছে!' : 'Sleep session logged successfully!'
+        );
+      }
+    } catch {
+      setErrorMsg(
+        isBn
+          ? 'ঘুমের রেকর্ড সংরক্ষণ করতে সমস্যা হয়েছে।'
+          : 'Failed to save sleep log. Please try again.'
+      );
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      if (editingSleep?.id === id) {
+        handleCancelEdit();
+      }
+      await deleteSleep(id);
+      showSuccess(isBn ? 'ঘুমের রেকর্ড মুছে ফেলা হয়েছে।' : 'Sleep record deleted.');
+    } catch {
+      setErrorMsg(isBn ? 'মুছে ফেলতে সমস্যা হয়েছে।' : 'Failed to delete sleep record.');
+    }
   };
 
   // Recent sleep
@@ -137,11 +244,59 @@ export const SleepTracker: React.FC = () => {
         </div>
       </div>
 
-      {/* Log Sleep Form */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-        <h3 className="text-sm font-extrabold text-neutral-900 mb-3">
-          {isBn ? 'ঘুমের সময় ও মান রেকর্ড করুন' : 'Log Sleep Session'}
-        </h3>
+      {/* Feedback & Error Banners */}
+      {feedbackMsg && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{feedbackMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Log / Edit Sleep Form */}
+      <div
+        ref={formRef}
+        className={`bg-white rounded-3xl p-5 border shadow-xs transition-all ${
+          editingSleep
+            ? 'border-indigo-500 ring-2 ring-indigo-500/20'
+            : 'border-neutral-200/80'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            {editingSleep && (
+              <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded mb-1">
+                {isBn ? 'ঘুমের রেকর্ড সম্পাদনা মোড' : 'Editing Existing Sleep Log'}
+              </span>
+            )}
+            <h3 className="text-sm font-extrabold text-neutral-900">
+              {editingSleep
+                ? isBn
+                  ? `ঘুমের রেকর্ড সম্পাদনা করুন (${editingSleep.date})`
+                  : `Edit Sleep Session (${editingSleep.date})`
+                : isBn
+                ? 'ঘুমের সময় ও মান রেকর্ড করুন'
+                : 'Log Sleep Session'}
+            </h3>
+          </div>
+
+          {editingSleep && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-bold"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>{t('cancel')}</span>
+            </button>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -184,6 +339,7 @@ export const SleepTracker: React.FC = () => {
               <input
                 type="date"
                 value={date}
+                max={today}
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold text-neutral-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/30"
                 required
@@ -236,23 +392,32 @@ export const SleepTracker: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            {savedSuccess ? (
-              <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-                <Check className="w-4 h-4" /> {isBn ? 'ঘুমের রেকর্ড সংরক্ষিত হয়েছে!' : 'Sleep logged!'}
-              </span>
-            ) : (
-              <span className="text-[11px] text-neutral-400">
-                {isBn ? 'লক্ষ্য: প্রতি রাতে ৭-৮ ঘণ্টা' : 'Goal: 7-8 hours nightly'}
-              </span>
-            )}
+          <div className="flex items-center justify-between pt-1 gap-2">
+            <span className="text-[11px] text-neutral-400">
+              {isBn ? 'লক্ষ্য: প্রতি রাতে ৭-৮ ঘণ্টা' : 'Goal: 7-8 hours nightly'}
+            </span>
 
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all"
-            >
-              {t('save')}
-            </button>
+            <div className="flex items-center gap-2">
+              {editingSleep && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold hover:bg-neutral-50"
+                >
+                  {t('cancel')}
+                </button>
+              )}
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all"
+              >
+                {editingSleep
+                  ? isBn
+                    ? 'ঘুমের রেকর্ড আপডেট করুন'
+                    : 'Update Sleep Log'
+                  : t('save')}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -282,29 +447,49 @@ export const SleepTracker: React.FC = () => {
         </h3>
 
         <div className="divide-y divide-neutral-100">
-          {sleepLogs.map((log) => (
-            <div key={log.id} className="py-3 flex items-center justify-between text-xs">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-neutral-900">{log.date}</span>
-                  <span className="text-[10px] bg-indigo-50 text-indigo-800 font-semibold px-2 py-0.5 rounded-full">
-                    {Math.floor(log.durationMinutes / 60)}h {log.durationMinutes % 60}m
-                  </span>
+          {sleepLogs.map((log) => {
+            const isBeingEdited = editingSleep?.id === log.id;
+            return (
+              <div
+                key={log.id}
+                className={`py-3 flex items-center justify-between text-xs rounded-xl transition-colors ${
+                  isBeingEdited ? 'bg-indigo-50/60 px-2.5' : ''
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-neutral-900">{log.date}</span>
+                    <span className="text-[10px] bg-indigo-50 text-indigo-800 font-semibold px-2 py-0.5 rounded-full">
+                      {Math.floor(log.durationMinutes / 60)}h {log.durationMinutes % 60}m
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-neutral-500 mt-0.5">
+                    {log.bedtime} - {log.wakeTime} ({log.quality}/5 ★)
+                    {log.notes ? ` • ${log.notes}` : ''}
+                  </div>
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-0.5">
-                  {log.bedtime} - {log.wakeTime} ({log.quality}/5 ★)
-                  {log.notes ? ` • ${log.notes}` : ''}
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit(log)}
+                    title={isBn ? 'সম্পাদনা করুন' : 'Edit'}
+                    className="p-1.5 rounded-lg text-neutral-400 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(log.id)}
+                    title={isBn ? 'মুছে ফেলুন' : 'Delete'}
+                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
-
-              <button
-                onClick={() => deleteSleep(log.id)}
-                className="p-1 rounded-md text-neutral-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

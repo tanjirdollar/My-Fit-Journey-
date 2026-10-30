@@ -1,52 +1,161 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useFitnessData, getTodayDateStr } from '../context/FitnessDataContext';
+import { BodyMeasurement } from '../types';
 import { WhTrGauge } from './WhTrGauge';
 import { SimpleLineChart } from './charts/SimpleLineChart';
 import {
-  Scale,
-  TrendingDown,
   Trash2,
-  Plus,
-  Info,
-  Calendar,
-  ShieldCheck,
   Check,
+  Pencil,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 
 export const BodyMeasurements: React.FC = () => {
   const { t, language } = useLanguage();
-  const { profile, updateProfile } = useAuth();
-  const { bodyMeasurements, addMeasurement, deleteMeasurement } = useFitnessData();
+  const { profile } = useAuth();
+  const {
+    bodyMeasurements,
+    addMeasurement,
+    updateMeasurement,
+    deleteMeasurement,
+  } = useFitnessData();
   const isBn = language === 'bn';
   const today = getTodayDateStr();
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Form states
-  const [weightInput, setWeightInput] = useState<number>(63.0);
-  const [waistInput, setWaistInput] = useState<number>(88.0);
+  const [editingMeasurement, setEditingMeasurement] = useState<BodyMeasurement | null>(null);
+  const [weightInput, setWeightInput] = useState<string>('63.0');
+  const [waistInput, setWaistInput] = useState<string>('88.0');
   const [dateInput, setDateInput] = useState<string>(today);
   const [notesInput, setNotesInput] = useState<string>('');
-  const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Dynamic calculations based on user's height
+  // Numeric values for dynamic preview
+  const numericWeight = parseFloat(weightInput) || 0;
+  const numericWaist = parseFloat(waistInput) || 0;
   const heightM = (profile.heightCm || 165) / 100;
-  const calculatedBmi = Number((weightInput / (heightM * heightM)).toFixed(2));
-  const calculatedWhtr = Number((waistInput / (profile.heightCm || 165)).toFixed(3));
+  const calculatedBmi =
+    numericWeight > 0 ? Number((numericWeight / (heightM * heightM)).toFixed(2)) : 0;
+  const calculatedWhtr =
+    numericWaist > 0 ? Number((numericWaist / (profile.heightCm || 165)).toFixed(3)) : 0;
+
+  const showSuccess = (msg: string) => {
+    setErrorMsg(null);
+    setFeedbackMsg(msg);
+    setTimeout(() => setFeedbackMsg(null), 3000);
+  };
+
+  const handleStartEdit = (item: BodyMeasurement) => {
+    setEditingMeasurement(item);
+    setWaistInput(String(item.waistCm));
+    setWeightInput(String(item.weightKg));
+    setDateInput(item.date);
+    setNotesInput(item.notes || '');
+    setErrorMsg(null);
+    setFeedbackMsg(null);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMeasurement(null);
+    setWaistInput('88.0');
+    setWeightInput('63.0');
+    setDateInput(today);
+    setNotesInput('');
+    setErrorMsg(null);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addMeasurement({
-      date: dateInput,
-      weightKg: weightInput,
-      waistCm: waistInput,
-      bmi: calculatedBmi,
-      waistToHeightRatio: calculatedWhtr,
-      notes: notesInput,
-    });
-    setSavedSuccess(true);
-    setNotesInput('');
-    setTimeout(() => setSavedSuccess(false), 2500);
+    setErrorMsg(null);
+
+    const waistVal = Number(parseFloat(waistInput).toFixed(1));
+    const weightVal = Number(parseFloat(weightInput).toFixed(1));
+
+    if (!dateInput || !/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      setErrorMsg(
+        isBn ? 'অনুগ্রহ করে একটি সঠিক তারিখ নির্বাচন করুন।' : 'Please select a valid date.'
+      );
+      return;
+    }
+
+    if (isNaN(waistVal) || waistVal < 30 || waistVal > 250) {
+      setErrorMsg(
+        isBn
+          ? 'কোমরের পরিধি ৩০ থেকে ২৫০ সেমি-এর মধ্যে হতে হবে।'
+          : 'Waist circumference must be between 30 cm and 250 cm.'
+      );
+      return;
+    }
+
+    if (isNaN(weightVal) || weightVal < 20 || weightVal > 300) {
+      setErrorMsg(
+        isBn
+          ? 'ওজন ২০ থেকে ৩০০ কেজি-এর মধ্যে হতে হবে।'
+          : 'Weight must be between 20 kg and 300 kg.'
+      );
+      return;
+    }
+
+    const bmiVal = Number((weightVal / (heightM * heightM)).toFixed(2));
+    const whtrVal = Number((waistVal / (profile.heightCm || 165)).toFixed(3));
+
+    try {
+      if (editingMeasurement) {
+        await updateMeasurement({
+          ...editingMeasurement,
+          date: dateInput,
+          weightKg: weightVal,
+          waistCm: waistVal,
+          bmi: bmiVal,
+          waistToHeightRatio: whtrVal,
+          notes: notesInput.trim(),
+        });
+        setEditingMeasurement(null);
+        setNotesInput('');
+        showSuccess(
+          isBn
+            ? 'পরিমাপটি সফলভাবে আপডেট করা হয়েছে!'
+            : 'Body measurement updated successfully!'
+        );
+      } else {
+        await addMeasurement({
+          date: dateInput,
+          weightKg: weightVal,
+          waistCm: waistVal,
+          bmi: bmiVal,
+          waistToHeightRatio: whtrVal,
+          notes: notesInput.trim(),
+        });
+        setNotesInput('');
+        showSuccess(
+          isBn ? 'নতুন পরিমাপ সফলভাবে সংরক্ষিত হয়েছে!' : 'New measurement recorded!'
+        );
+      }
+    } catch {
+      setErrorMsg(
+        isBn
+          ? 'পরিমাপ সংরক্ষণ করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।'
+          : 'Failed to save measurement. Please try again.'
+      );
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      if (editingMeasurement?.id === id) {
+        handleCancelEdit();
+      }
+      await deleteMeasurement(id);
+      showSuccess(isBn ? 'পরিমাপ মুছে ফেলা হয়েছে।' : 'Measurement deleted.');
+    } catch {
+      setErrorMsg(isBn ? 'মুছে ফেলতে সমস্যা হয়েছে।' : 'Failed to delete measurement.');
+    }
   };
 
   // Prepare chart data (sorted chronologically)
@@ -117,6 +226,21 @@ export const BodyMeasurements: React.FC = () => {
         </div>
       </div>
 
+      {/* Feedback & Error Banners */}
+      {feedbackMsg && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{feedbackMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {/* WHtR Visual Gauge */}
       <WhTrGauge
         waistCm={latest.waistCm}
@@ -124,11 +248,45 @@ export const BodyMeasurements: React.FC = () => {
         targetWaistCm={profile.targetWaistCm}
       />
 
-      {/* Log New Measurement Form */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-        <h3 className="text-sm font-extrabold text-neutral-900 mb-2">
-          {isBn ? 'নতুন পরিমাপ রেকর্ড করুন' : 'Record New Measurement'}
-        </h3>
+      {/* Log / Edit Measurement Form */}
+      <div
+        ref={formRef}
+        className={`bg-white rounded-3xl p-5 border shadow-xs transition-all ${
+          editingMeasurement
+            ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+            : 'border-neutral-200/80'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            {editingMeasurement && (
+              <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded mb-1">
+                {isBn ? 'পরিমাপ সম্পাদনা মোড' : 'Editing Existing Record'}
+              </span>
+            )}
+            <h3 className="text-sm font-extrabold text-neutral-900">
+              {editingMeasurement
+                ? isBn
+                  ? `পরিমাপ সম্পাদনা করুন (${editingMeasurement.date})`
+                  : `Edit Measurement (${editingMeasurement.date})`
+                : isBn
+                ? 'নতুন পরিমাপ রেকর্ড করুন'
+                : 'Record New Measurement'}
+            </h3>
+          </div>
+
+          {editingMeasurement && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-bold"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>{t('cancel')}</span>
+            </button>
+          )}
+        </div>
+
         <p className="text-xs text-neutral-500 mb-4">
           {isBn
             ? 'সকালে খালি পেটে নাভির সমান্তরালে মেপে কোমরের মাপ লিখুন।'
@@ -143,11 +301,11 @@ export const BodyMeasurements: React.FC = () => {
               </label>
               <input
                 type="number"
-                step="0.5"
-                min="50"
-                max="150"
+                step="0.1"
+                min="30"
+                max="250"
                 value={waistInput}
-                onChange={(e) => setWaistInput(parseFloat(e.target.value) || 88)}
+                onChange={(e) => setWaistInput(e.target.value)}
                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
                 required
               />
@@ -155,15 +313,15 @@ export const BodyMeasurements: React.FC = () => {
 
             <div>
               <label className="block text-[11px] font-bold text-neutral-600 mb-1">
-                {t('weight')} (kg)
+                {t('weight')} (kg) *
               </label>
               <input
                 type="number"
                 step="0.1"
-                min="30"
-                max="200"
+                min="20"
+                max="300"
                 value={weightInput}
-                onChange={(e) => setWeightInput(parseFloat(e.target.value) || 63)}
+                onChange={(e) => setWeightInput(e.target.value)}
                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
                 required
               />
@@ -171,11 +329,12 @@ export const BodyMeasurements: React.FC = () => {
 
             <div>
               <label className="block text-[11px] font-bold text-neutral-600 mb-1">
-                Date / তারিখ
+                Date / তারিখ *
               </label>
               <input
                 type="date"
                 value={dateInput}
+                max={today}
                 onChange={(e) => setDateInput(e.target.value)}
                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold text-neutral-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
                 required
@@ -210,23 +369,32 @@ export const BodyMeasurements: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            {savedSuccess ? (
-              <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-                <Check className="w-4 h-4" /> {isBn ? 'সফলভাবে সংরক্ষিত!' : 'Measurement recorded!'}
-              </span>
-            ) : (
-              <span className="text-[11px] text-neutral-400">
-                {isBn ? 'প্রতি সপ্তাহে অন্তত একবার কোমর মাপুন' : 'Measure waist at least once weekly'}
-              </span>
-            )}
+          <div className="flex items-center justify-between pt-1 gap-2">
+            <span className="text-[11px] text-neutral-400">
+              {isBn ? 'প্রতি সপ্তাহে অন্তত একবার কোমর মাপুন' : 'Measure waist at least once weekly'}
+            </span>
 
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all"
-            >
-              {t('save')}
-            </button>
+            <div className="flex items-center gap-2">
+              {editingMeasurement && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold hover:bg-neutral-50"
+                >
+                  {t('cancel')}
+                </button>
+              )}
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all"
+              >
+                {editingMeasurement
+                  ? isBn
+                    ? 'পরিমাপ আপডেট করুন'
+                    : 'Update Measurement'
+                  : t('save')}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -268,30 +436,50 @@ export const BodyMeasurements: React.FC = () => {
           {sortedMeasurements
             .slice()
             .reverse()
-            .map((item) => (
-              <div key={item.id} className="py-3 flex items-center justify-between text-xs">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-neutral-900">{item.date}</span>
-                    <span className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
-                      WHtR {item.waistToHeightRatio}
-                    </span>
+            .map((item) => {
+              const isBeingEdited = editingMeasurement?.id === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className={`py-3 flex items-center justify-between text-xs rounded-xl transition-colors ${
+                    isBeingEdited ? 'bg-emerald-50/60 px-2.5' : ''
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-neutral-900">{item.date}</span>
+                      <span className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
+                        WHtR {item.waistToHeightRatio}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">
+                      Waist: <span className="font-semibold text-neutral-800">{item.waistCm} cm</span> • Weight:{' '}
+                      <span className="font-semibold text-neutral-800">{item.weightKg} kg</span> • BMI: {item.bmi}
+                      {item.notes ? ` • ${item.notes}` : ''}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-neutral-500 mt-0.5">
-                    Waist: <span className="font-semibold text-neutral-800">{item.waistCm} cm</span> • Weight:{' '}
-                    <span className="font-semibold text-neutral-800">{item.weightKg} kg</span> • BMI: {item.bmi}
-                    {item.notes ? ` • ${item.notes}` : ''}
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleStartEdit(item)}
+                      title={isBn ? 'সম্পাদনা করুন' : 'Edit'}
+                      className="p-1.5 rounded-lg text-neutral-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item.id)}
+                      title={isBn ? 'মুছে ফেলুন' : 'Delete'}
+                      className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-
-                <button
-                  onClick={() => deleteMeasurement(item.id)}
-                  className="p-1 rounded-md text-neutral-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
         </div>
       </div>
     </div>

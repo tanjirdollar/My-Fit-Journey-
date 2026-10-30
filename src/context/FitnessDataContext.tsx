@@ -39,6 +39,32 @@ export function getYesterdayDateStr(): string {
   return `${year}-${month}-${day}`;
 }
 
+export function getRecentDatesList(
+  isBn: boolean,
+  daysCount: number = 7
+): { dateStr: string; dayLabel: string; dayNum: string; isToday: boolean }[] {
+  const todayStr = getTodayDateStr();
+  const list: { dateStr: string; dayLabel: string; dayNum: string; isToday: boolean }[] = [];
+  for (let i = daysCount - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${day}`;
+    const dayLabel = new Intl.DateTimeFormat(isBn ? 'bn-BD' : 'en-US', {
+      weekday: 'short',
+    }).format(d);
+    list.push({
+      dateStr,
+      dayLabel,
+      dayNum: String(d.getDate()),
+      isToday: dateStr === todayStr,
+    });
+  }
+  return list;
+}
+
 // Initial baseline mock data matching the 38-yo male user's brief
 const today = getTodayDateStr();
 const yesterday = getYesterdayDateStr();
@@ -330,22 +356,30 @@ interface FitnessDataContextType {
   copyYesterdayMeals: (targetMeal?: MealType, targetDate?: string) => Promise<number>;
   
   addExercise: (item: Omit<ExerciseLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateExercise: (item: ExerciseLog) => Promise<void>;
   deleteExercise: (id: string) => Promise<void>;
   
-  updateTodayActivity: (steps: number, walkMinutes: number, distanceKm: number) => Promise<void>;
+  updateTodayActivity: (steps: number, walkMinutes: number, distanceKm: number, targetDate?: string) => Promise<void>;
   
   addMeasurement: (item: Omit<BodyMeasurement, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateMeasurement: (item: BodyMeasurement) => Promise<void>;
   deleteMeasurement: (id: string) => Promise<void>;
   
-  incrementWater: () => Promise<void>;
-  decrementWater: () => Promise<void>;
-  incrementSittingBreak: () => Promise<void>;
-  toggleHabitCheck: (habitKey: keyof Omit<HabitLog, 'id' | 'userId' | 'date' | 'waterGlasses' | 'sittingBreaks' | 'updatedAt'>) => Promise<void>;
+  incrementWater: (targetDate?: string | unknown) => Promise<void>;
+  decrementWater: (targetDate?: string | unknown) => Promise<void>;
+  incrementSittingBreak: (targetDate?: string | unknown) => Promise<void>;
+  decrementSittingBreak: (targetDate?: string | unknown) => Promise<void>;
+  toggleHabitCheck: (
+    habitKey: keyof Omit<HabitLog, 'id' | 'userId' | 'date' | 'waterGlasses' | 'sittingBreaks' | 'updatedAt'>,
+    targetDate?: string
+  ) => Promise<void>;
   
   addSleep: (item: Omit<SleepLog, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateSleep: (item: SleepLog) => Promise<void>;
   deleteSleep: (id: string) => Promise<void>;
   
   addHealthRecord: (item: Omit<HealthRecord, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateHealthRecord: (item: HealthRecord) => Promise<void>;
   deleteHealthRecord: (id: string) => Promise<void>;
   
   saveAICoachNote: (note: Omit<AICoachNote, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
@@ -609,6 +643,23 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
+  const updateExercise = async (item: ExerciseLog) => {
+    const cleanItem: ExerciseLog = stripUndefined({
+      ...item,
+      userId: user ? user.uid : item.userId || 'demo_user',
+    });
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/exercise_logs`, cleanItem.id);
+      try {
+        await setDoc(docRef, cleanItem);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/exercise_logs/${cleanItem.id}`);
+      }
+    } else {
+      setExerciseLogs((prev) => prev.map((e) => (e.id === cleanItem.id ? cleanItem : e)));
+    }
+  };
+
   const deleteExercise = async (id: string) => {
     if (user) {
       const docRef = doc(db, `users/${user.uid}/exercise_logs`, id);
@@ -622,10 +673,19 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  const updateTodayActivity = async (steps: number, walkMinutes: number, distanceKm: number) => {
-    const tDate = getTodayDateStr();
-    const id = `act_${tDate}`;
-    const userId = user ? user.uid : 'demo_user';
+  const updateTodayActivity = async (
+    steps: number,
+    walkMinutes: number,
+    distanceKm: number,
+    targetDate?: string
+  ) => {
+    const tDate =
+      typeof targetDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(targetDate)
+        ? targetDate
+        : getTodayDateStr();
+    const existing = activityLogs.find((a) => a.date === tDate);
+    const id = existing ? existing.id : `act_${tDate}`;
+    const userId = user ? user.uid : existing?.userId || 'demo_user';
     const actData: ActivityLog = stripUndefined({
       id,
       userId,
@@ -634,7 +694,7 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       walkingDurationMinutes: walkMinutes,
       distanceKm,
       notes: 'Updated steps and activity log',
-      createdAt: new Date().toISOString(),
+      createdAt: existing?.createdAt || new Date().toISOString(),
     });
 
     if (user) {
@@ -646,8 +706,8 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       setActivityLogs((prev) => {
-        const filtered = prev.filter((a) => a.date !== tDate);
-        return [...filtered, actData];
+        const filtered = prev.filter((a) => a.date !== tDate && a.id !== id);
+        return [...filtered, actData].sort((a, b) => b.date.localeCompare(a.date));
       });
     }
   };
@@ -674,6 +734,26 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
+  const updateMeasurement = async (item: BodyMeasurement) => {
+    const cleanItem: BodyMeasurement = stripUndefined({
+      ...item,
+      userId: user ? user.uid : item.userId || 'demo_user',
+    });
+
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/body_measurements`, cleanItem.id);
+      try {
+        await setDoc(docRef, cleanItem);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/body_measurements/${cleanItem.id}`);
+      }
+    } else {
+      setBodyMeasurements((prev) =>
+        prev.map((m) => (m.id === cleanItem.id ? cleanItem : m)).sort((a, b) => a.date.localeCompare(b.date))
+      );
+    }
+  };
+
   const deleteMeasurement = async (id: string) => {
     if (user) {
       const docRef = doc(db, `users/${user.uid}/body_measurements`, id);
@@ -687,11 +767,19 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // Habits mutations
-  const getOrCreateTodayHabit = (): HabitLog => {
-    const tDate = getTodayDateStr();
+  // Habits mutations (supports optional targetDate, defaulting to today)
+  const getOrCreateHabitForDate = (targetDate?: string | unknown): HabitLog => {
+    const tDate =
+      typeof targetDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(targetDate)
+        ? targetDate
+        : getTodayDateStr();
     const existing = habitLogs.find((h) => h.date === tDate);
-    if (existing) return existing;
+    if (existing) {
+      return {
+        ...existing,
+        userId: user ? user.uid : existing.userId || 'demo_user',
+      };
+    }
     return {
       id: `habit_${tDate}`,
       userId: user ? user.uid : 'demo_user',
@@ -708,7 +796,10 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const saveHabit = async (habit: HabitLog) => {
-    const cleanHabit = stripUndefined(habit);
+    const cleanHabit = stripUndefined({
+      ...habit,
+      userId: user ? user.uid : habit.userId || 'demo_user',
+    });
     if (user) {
       const docRef = doc(db, `users/${user.uid}/habit_logs`, cleanHabit.id);
       try {
@@ -718,14 +809,14 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       setHabitLogs((prev) => {
-        const filtered = prev.filter((h) => h.id !== cleanHabit.id);
+        const filtered = prev.filter((h) => h.id !== cleanHabit.id && h.date !== cleanHabit.date);
         return [...filtered, cleanHabit];
       });
     }
   };
 
-  const incrementWater = async () => {
-    const habit = getOrCreateTodayHabit();
+  const incrementWater = async (targetDate?: string | unknown) => {
+    const habit = getOrCreateHabitForDate(targetDate);
     const updated = {
       ...habit,
       waterGlasses: Math.min(30, habit.waterGlasses + 1),
@@ -734,8 +825,8 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     await saveHabit(updated);
   };
 
-  const decrementWater = async () => {
-    const habit = getOrCreateTodayHabit();
+  const decrementWater = async (targetDate?: string | unknown) => {
+    const habit = getOrCreateHabitForDate(targetDate);
     const updated = {
       ...habit,
       waterGlasses: Math.max(0, habit.waterGlasses - 1),
@@ -744,20 +835,31 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     await saveHabit(updated);
   };
 
-  const incrementSittingBreak = async () => {
-    const habit = getOrCreateTodayHabit();
+  const incrementSittingBreak = async (targetDate?: string | unknown) => {
+    const habit = getOrCreateHabitForDate(targetDate);
     const updated = {
       ...habit,
-      sittingBreaks: habit.sittingBreaks + 1,
+      sittingBreaks: Math.min(50, habit.sittingBreaks + 1),
+      updatedAt: new Date().toISOString(),
+    };
+    await saveHabit(updated);
+  };
+
+  const decrementSittingBreak = async (targetDate?: string | unknown) => {
+    const habit = getOrCreateHabitForDate(targetDate);
+    const updated = {
+      ...habit,
+      sittingBreaks: Math.max(0, habit.sittingBreaks - 1),
       updatedAt: new Date().toISOString(),
     };
     await saveHabit(updated);
   };
 
   const toggleHabitCheck = async (
-    habitKey: keyof Omit<HabitLog, 'id' | 'userId' | 'date' | 'waterGlasses' | 'sittingBreaks' | 'updatedAt'>
+    habitKey: keyof Omit<HabitLog, 'id' | 'userId' | 'date' | 'waterGlasses' | 'sittingBreaks' | 'updatedAt'>,
+    targetDate?: string
   ) => {
-    const habit = getOrCreateTodayHabit();
+    const habit = getOrCreateHabitForDate(targetDate);
     const updated = {
       ...habit,
       [habitKey]: !habit[habitKey],
@@ -784,7 +886,27 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/sleep_logs/${id}`);
       }
     } else {
-      setSleepLogs((prev) => [newLog, ...prev]);
+      setSleepLogs((prev) => [newLog, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+    }
+  };
+
+  const updateSleep = async (item: SleepLog) => {
+    const cleanItem: SleepLog = stripUndefined({
+      ...item,
+      userId: user ? user.uid : item.userId || 'demo_user',
+    });
+
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/sleep_logs`, cleanItem.id);
+      try {
+        await setDoc(docRef, cleanItem);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/sleep_logs/${cleanItem.id}`);
+      }
+    } else {
+      setSleepLogs((prev) =>
+        prev.map((s) => (s.id === cleanItem.id ? cleanItem : s)).sort((a, b) => b.date.localeCompare(a.date))
+      );
     }
   };
 
@@ -819,7 +941,27 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/health_records/${id}`);
       }
     } else {
-      setHealthRecords((prev) => [newLog, ...prev]);
+      setHealthRecords((prev) => [newLog, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+    }
+  };
+
+  const updateHealthRecord = async (item: HealthRecord) => {
+    const cleanItem: HealthRecord = stripUndefined({
+      ...item,
+      userId: user ? user.uid : item.userId || 'demo_user',
+    });
+
+    if (user) {
+      const docRef = doc(db, `users/${user.uid}/health_records`, cleanItem.id);
+      try {
+        await setDoc(docRef, cleanItem);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}/health_records/${cleanItem.id}`);
+      }
+    } else {
+      setHealthRecords((prev) =>
+        prev.map((h) => (h.id === cleanItem.id ? cleanItem : h)).sort((a, b) => b.date.localeCompare(a.date))
+      );
     }
   };
 
@@ -975,17 +1117,22 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         deleteNutrition,
         copyYesterdayMeals,
         addExercise,
+        updateExercise,
         deleteExercise,
         updateTodayActivity,
         addMeasurement,
+        updateMeasurement,
         deleteMeasurement,
         incrementWater,
         decrementWater,
         incrementSittingBreak,
+        decrementSittingBreak,
         toggleHabitCheck,
         addSleep,
+        updateSleep,
         deleteSleep,
         addHealthRecord,
+        updateHealthRecord,
         deleteHealthRecord,
         saveAICoachNote,
         exportAllDataJson,

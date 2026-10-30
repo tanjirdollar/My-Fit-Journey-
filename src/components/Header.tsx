@@ -28,7 +28,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
       setAuthError(null);
       await signInWithGoogle();
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : 'Sign in failed');
+      const rawMsg = err instanceof Error ? err.message : 'Sign in failed';
+      if (rawMsg.includes('auth/unauthorized-domain')) {
+        const host = window.location.hostname;
+        setAuthError(
+          language === 'bn'
+            ? `"${host}" ডোমেইনটি Firebase-এ অনুমোদিত নয়। Firebase Console > Authentication > Settings > Authorized domains-এ গিয়ে "${host}" যোগ করুন।`
+            : `Domain "${host}" is not authorized in Firebase. Add "${host}" in Firebase Console > Authentication > Settings > Authorized domains.`
+        );
+      } else {
+        setAuthError(rawMsg);
+      }
     } finally {
       setSigningIn(false);
     }
