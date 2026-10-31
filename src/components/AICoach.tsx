@@ -133,6 +133,7 @@ export const AICoach: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
+          'X-Requested-With': 'MyFitJourneyClient',
         },
         body: JSON.stringify({
           userQuery: textToSend,

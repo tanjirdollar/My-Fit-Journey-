@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useFitnessData, getTodayDateStr } from '../context/FitnessDataContext';
@@ -14,6 +14,7 @@ import {
   NutritionLog,
   ServingUnit,
 } from '../types';
+import { AIFoodRecognitionModal } from './AIFoodRecognitionModal';
 import {
   Search,
   Plus,
@@ -28,6 +29,9 @@ import {
   Calendar,
   Utensils,
   X,
+  Camera,
+  Image as ImageIcon,
+  Sparkles,
 } from 'lucide-react';
 
 const SERVING_UNITS: {
@@ -134,6 +138,21 @@ export const NutritionTracker: React.FC = () => {
 
   // Status feedback banner
   const [feedbackBanner, setFeedbackBanner] = useState<string | null>(null);
+
+  // AI Food Recognition Modal & Quick File Triggers
+  const [isAiRecognitionOpen, setIsAiRecognitionOpen] = useState<boolean>(false);
+  const [quickSelectedFile, setQuickSelectedFile] = useState<File | null>(null);
+  const quickCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const quickGalleryInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleQuickFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setQuickSelectedFile(file);
+      setIsAiRecognitionOpen(true);
+    }
+    e.target.value = '';
+  };
 
   const showFeedback = (msg: string) => {
     setFeedbackBanner(msg);
@@ -482,6 +501,39 @@ export const NutritionTracker: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Hidden Quick Camera & Gallery Inputs */}
+            <input
+              ref={quickCameraInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              onChange={handleQuickFilePicked}
+              className="hidden"
+            />
+            <input
+              ref={quickGalleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleQuickFilePicked}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                setQuickSelectedFile(null);
+                setIsAiRecognitionOpen(true);
+              }}
+              className="min-h-[44px] px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors whitespace-nowrap shrink-0"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>
+                {isBn
+                  ? 'এআই ফুড রিকগনিশন (AI Photo)'
+                  : 'AI Food Recognition'}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => handleCopyPreviousDay()}
@@ -807,6 +859,12 @@ export const NutritionTracker: React.FC = () => {
                                     <span>{item.fat}g F</span>
                                   </>
                                 )}
+                                {item.fiber !== undefined && item.fiber > 0 && (
+                                  <>
+                                    <span aria-hidden="true">·</span>
+                                    <span>{item.fiber}g Fiber</span>
+                                  </>
+                                )}
                                 {item.notes && (
                                   <>
                                     <span aria-hidden="true">·</span>
@@ -854,8 +912,55 @@ export const NutritionTracker: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (5 cols): Searchable Bangladeshi Food Database */}
-        <div className="lg:col-span-5 lg:sticky lg:top-[116px] bg-white rounded-3xl p-5 sm:p-6 border border-neutral-200/80 shadow-xs space-y-4">
+        {/* RIGHT COLUMN (5 cols): AI Food Recognition Card + Searchable Bangladeshi Food Database */}
+        <div className="lg:col-span-5 lg:sticky lg:top-[116px] space-y-5">
+          {/* AI Food Recognition Quick Card */}
+          <div className="bg-emerald-950 text-white rounded-3xl p-5 border border-emerald-800/80 shadow-xs space-y-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>
+                    {isBn
+                      ? 'এআই ফুড রিকগনিশন (AI Food Recognition)'
+                      : 'AI Food Recognition'}
+                  </span>
+                </div>
+                <h2 className="text-base font-bold text-white">
+                  {isBn
+                    ? 'ছবি তুলে খাবারের ক্যালোরি ও প্রোটিন মাপুন'
+                    : 'Snap a Meal Photo to Estimate Nutrition'}
+                </h2>
+                <p className="text-xs text-emerald-100/80 leading-relaxed">
+                  {isBn
+                    ? 'ভাত, মাছের ঝোল, ডাল, সবজি বা খিচুড়ির প্লেটের ছবি তুলুন। এআই প্রতিটি পদ আলাদাভাবে শনাক্ত করবে এবং আপনি সংরক্ষণের আগে সম্পাদনা করতে পারবেন।'
+                    : 'Identify mixed Bengali plates (rice, fish curry, dal, bhaji) or single items and review/edit before saving.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => quickCameraInputRef.current?.click()}
+                className="min-h-[44px] px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Camera className="w-4 h-4 shrink-0" />
+                <span>{isBn ? 'ক্যামেরায় ছবি তুলুন' : 'Take Photo'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => quickGalleryInputRef.current?.click()}
+                className="min-h-[44px] px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <ImageIcon className="w-4 h-4 shrink-0 text-emerald-300" />
+                <span>{isBn ? 'গ্যালারি থেকে নিন' : 'From Gallery'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-neutral-200/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-base font-bold text-neutral-900">
@@ -1081,8 +1186,44 @@ export const NutritionTracker: React.FC = () => {
               })
             )}
           </div>
+          </div>
         </div>
       </div>
+
+      {/* AI Food Recognition Modal */}
+      <AIFoodRecognitionModal
+        isOpen={isAiRecognitionOpen}
+        onClose={() => {
+          setIsAiRecognitionOpen(false);
+          setQuickSelectedFile(null);
+        }}
+        initialDate={selectedDate}
+        initialMealType={selectedMealType}
+        initialFile={quickSelectedFile}
+        onSaveToTracker={async (entry) => {
+          await addNutrition({
+            date: entry.date,
+            mealType: entry.mealType,
+            foodName: entry.foodName,
+            foodNameBn: entry.foodNameBn,
+            portion: entry.portion,
+            unit: entry.unit,
+            calories: entry.calories,
+            protein: entry.protein,
+            carbs: entry.carbs,
+            fat: entry.fat,
+            fiber: entry.fiber,
+            notes: entry.notes,
+          });
+          setSelectedDate(entry.date);
+          setSelectedMealType(entry.mealType);
+          showFeedback(
+            isBn
+              ? `"${entry.foodNameBn}" (${entry.portion}g · ${entry.calories} kcal) ${t(entry.mealType)}-এ যোগ হয়েছে!`
+              : `Added "${entry.foodName}" (${entry.portion}g · ${entry.calories} kcal) to ${t(entry.mealType)}!`
+          );
+        }}
+      />
 
       {/* =====================================================================
           SERVING SIZE & MACRONUTRIENT EDITOR MODAL (Add / Edit Meal)

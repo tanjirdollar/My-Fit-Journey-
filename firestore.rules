@@ -48,6 +48,7 @@ service cloud.firestore {
         && data.protein is number && data.protein >= 0 && data.protein <= 500
         && (!('carbs' in data) || (data.carbs is number && data.carbs >= 0 && data.carbs <= 1000))
         && (!('fat' in data) || (data.fat is number && data.fat >= 0 && data.fat <= 500))
+        && (!('fiber' in data) || (data.fiber is number && data.fiber >= 0 && data.fiber <= 200))
         && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
     }
 
@@ -142,12 +143,20 @@ service cloud.firestore {
         && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
     }
 
+    function isImmutableSubcollectionUpdate() {
+      return incoming().userId == existing().userId
+        && incoming().id == existing().id
+        && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
+    }
+
     // Match root user document
     match /users/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId);
-      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId) && incoming().uid == existing().uid;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
       allow delete: if isOwner(userId) && isValidId(userId);
 
       // Subcollections under users/{userId}
@@ -155,70 +164,70 @@ service cloud.firestore {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidNutritionLog(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidNutritionLog(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidNutritionLog(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /exercise_logs/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidExerciseLog(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidExerciseLog(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidExerciseLog(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /activity_logs/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidActivityLog(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidActivityLog(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidActivityLog(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /body_measurements/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidBodyMeasurement(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidBodyMeasurement(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidBodyMeasurement(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /habit_logs/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHabitLog(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHabitLog(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHabitLog(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /sleep_logs/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidSleepLog(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidSleepLog(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidSleepLog(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /health_records/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHealthRecord(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHealthRecord(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidHealthRecord(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /ai_coach_notes/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidAICoachNote(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /favorite_foods/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidFavoriteFood(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidFavoriteFood(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidFavoriteFood(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
 
       match /custom_foods/{id} {
         allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(id);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidCustomFood(incoming(), userId);
-        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidCustomFood(incoming(), userId) && incoming().userId == existing().userId;
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(id) && isValidCustomFood(incoming(), userId) && isImmutableSubcollectionUpdate();
       }
     }
   }

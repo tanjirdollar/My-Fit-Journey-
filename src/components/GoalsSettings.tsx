@@ -170,7 +170,7 @@ export const GoalsSettings: React.FC = () => {
                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-extrabold text-emerald-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
               />
               <span className="text-[10px] text-neutral-400 mt-0.5 block">
-                Target WHtR: {(targetWaistCm / heightCm).toFixed(3)}
+                Target WHtR: {heightCm > 0 ? (targetWaistCm / heightCm).toFixed(3) : '0.000'}
               </span>
             </div>
 

@@ -99,8 +99,42 @@ export interface NutritionLog {
   protein: number;
   carbs?: number;
   fat?: number;
+  fiber?: number;
   notes?: string;
   createdAt: string;
+}
+
+export type AIFoodConfidence = 'high' | 'medium' | 'low' | 'unrecognized';
+
+export interface AIFoodComponent {
+  id: string;
+  nameBn: string;
+  nameEn: string;
+  estimatedGrams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+export interface AIFoodRecognitionResult {
+  isFood: boolean;
+  isBlurryOrDark: boolean;
+  confidenceLevel: AIFoodConfidence;
+  foodNameBn: string;
+  foodNameEn: string;
+  components: AIFoodComponent[];
+  estimatedServingGrams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  assumptionsAndNotesBn: string;
+  assumptionsAndNotesEn: string;
+  qualityWarningBn?: string;
+  qualityWarningEn?: string;
 }
 
 export type ExerciseCategory =

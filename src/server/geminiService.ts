@@ -1,4 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
+import {
+  AIFoodComponent,
+  AIFoodConfidence,
+  AIFoodRecognitionResult,
+} from '../types/index.ts';
 
 export interface CoachRequestPayload {
   userQuery?: string;
@@ -30,7 +35,9 @@ export interface CoachResponsePayload {
   actionItems: string[];
 }
 
-export async function generateCoachAdvice(payload: CoachRequestPayload): Promise<CoachResponsePayload> {
+export async function generateCoachAdvice(
+  payload: CoachRequestPayload
+): Promise<CoachResponsePayload> {
   const apiKey = process.env.GEMINI_API_KEY;
   const isBn = payload.language === 'bn';
 
@@ -167,4 +174,400 @@ Provide your response in JSON format with keys:
       ],
     };
   }
+}
+
+// ============================================================================
+// AI Food Recognition (Server-Side Gemini Vision Analysis)
+// ============================================================================
+
+export interface FoodImageAnalysisRequest {
+  imageBase64: string;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+  language?: 'en' | 'bn';
+}
+
+const DEFAULT_DISCLAIMER_BN =
+  'সতর্কতা: কেবল ছবির ওপর ভিত্তি করে রান্নার তেল, চিনি, লুকানো উপাদান এবং খাবারের প্রকৃত ওজন শতভাগ নিখুঁতভাবে নির্ধারণ করা কঠিন। সংরক্ষণের আগে প্রয়োজনে পরিমাণ ও পুষ্টিমান সম্পাদনা করে নিন।';
+
+const DEFAULT_DISCLAIMER_EN =
+  'Note: Cooking oil, added sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone. Please review and adjust the values before saving.';
+
+function clampNum(val: unknown, min: number, max: number, decimals = 1): number {
+  const num = typeof val === 'number' ? val : Number(val);
+  if (!Number.isFinite(num)) return min;
+  const clamped = Math.max(min, Math.min(max, num));
+  return decimals === 0 ? Math.round(clamped) : Number(clamped.toFixed(decimals));
+}
+
+/**
+ * Normalizes and validates raw AI JSON output into a strict AIFoodRecognitionResult.
+ * Ensures that unclear/non-food images never invent nutritional values, and mixed
+ * meal components sum accurately.
+ */
+export function normalizeFoodRecognitionResult(raw: unknown): AIFoodRecognitionResult {
+  const data = raw && typeof raw === 'object' ? (raw as Record<string, any>) : {};
+
+  const isFood = Boolean(data.isFood);
+  const isBlurryOrDark = Boolean(data.isBlurryOrDark);
+
+  const validConfidences: AIFoodConfidence[] = ['high', 'medium', 'low', 'unrecognized'];
+  let confidenceLevel: AIFoodConfidence = validConfidences.includes(data.confidenceLevel)
+    ? data.confidenceLevel
+    : isFood && !isBlurryOrDark
+    ? 'medium'
+    : 'unrecognized';
+
+  if (!isFood || isBlurryOrDark) {
+    if (confidenceLevel === 'high' || confidenceLevel === 'medium') {
+      confidenceLevel = isFood ? 'low' : 'unrecognized';
+    }
+  }
+
+  // If image is not food or confidence is unrecognized, NEVER invent nutritional values
+  const isUnclearOrUnrecognized = !isFood || confidenceLevel === 'unrecognized';
+
+  const rawComponents = Array.isArray(data.components) ? data.components : [];
+  const components: AIFoodComponent[] = isUnclearOrUnrecognized
+    ? []
+    : rawComponents
+        .filter((c: any) => c && (c.nameBn || c.nameEn))
+        .map((c: any, idx: number) => ({
+          id:
+            typeof c.id === 'string' && c.id.trim()
+              ? c.id.trim()
+              : `comp_${idx + 1}_${Date.now()}`,
+          nameBn:
+            typeof c.nameBn === 'string' && c.nameBn.trim()
+              ? c.nameBn.trim()
+              : typeof c.nameEn === 'string'
+              ? c.nameEn.trim()
+              : `উপাদান ${idx + 1}`,
+          nameEn:
+            typeof c.nameEn === 'string' && c.nameEn.trim()
+              ? c.nameEn.trim()
+              : typeof c.nameBn === 'string'
+              ? c.nameBn.trim()
+              : `Component ${idx + 1}`,
+          estimatedGrams: clampNum(c.estimatedGrams, 1, 3000, 0),
+          calories: clampNum(c.calories, 0, 5000, 0),
+          protein: clampNum(c.protein, 0, 500, 1),
+          carbs: clampNum(c.carbs, 0, 1000, 1),
+          fat: clampNum(c.fat, 0, 500, 1),
+          fiber: clampNum(c.fiber, 0, 200, 1),
+        }));
+
+  // Calculate totals from components when multiple components are identified
+  let estimatedServingGrams = isUnclearOrUnrecognized
+    ? 0
+    : clampNum(data.estimatedServingGrams, 0, 5000, 0);
+  let calories = isUnclearOrUnrecognized ? 0 : clampNum(data.calories, 0, 5000, 0);
+  let protein = isUnclearOrUnrecognized ? 0 : clampNum(data.protein, 0, 500, 1);
+  let carbs = isUnclearOrUnrecognized ? 0 : clampNum(data.carbs, 0, 1000, 1);
+  let fat = isUnclearOrUnrecognized ? 0 : clampNum(data.fat, 0, 500, 1);
+  let fiber = isUnclearOrUnrecognized ? 0 : clampNum(data.fiber, 0, 200, 1);
+
+  if (!isUnclearOrUnrecognized && components.length > 0) {
+    const sumGrams = components.reduce((acc, c) => acc + c.estimatedGrams, 0);
+    const sumCalories = components.reduce((acc, c) => acc + c.calories, 0);
+    const sumProtein = Number(
+      components.reduce((acc, c) => acc + c.protein, 0).toFixed(1)
+    );
+    const sumCarbs = Number(
+      components.reduce((acc, c) => acc + c.carbs, 0).toFixed(1)
+    );
+    const sumFat = Number(components.reduce((acc, c) => acc + c.fat, 0).toFixed(1));
+    const sumFiber = Number(
+      components.reduce((acc, c) => acc + c.fiber, 0).toFixed(1)
+    );
+
+    if (sumGrams > 0) estimatedServingGrams = clampNum(sumGrams, 1, 5000, 0);
+    if (sumCalories > 0) calories = clampNum(sumCalories, 0, 5000, 0);
+    protein = clampNum(sumProtein, 0, 500, 1);
+    carbs = clampNum(sumCarbs, 0, 1000, 1);
+    fat = clampNum(sumFat, 0, 500, 1);
+    fiber = clampNum(sumFiber, 0, 200, 1);
+  }
+
+  const foodNameBn = isUnclearOrUnrecognized
+    ? typeof data.foodNameBn === 'string' && data.foodNameBn.trim()
+      ? data.foodNameBn.trim()
+      : 'অস্পষ্ট বা অশনাক্তকৃত খাবার'
+    : typeof data.foodNameBn === 'string' && data.foodNameBn.trim()
+    ? data.foodNameBn.trim()
+    : 'বাংলাদেশী খাবার';
+
+  const foodNameEn = isUnclearOrUnrecognized
+    ? typeof data.foodNameEn === 'string' && data.foodNameEn.trim()
+      ? data.foodNameEn.trim()
+      : 'Unrecognized or Unclear Image'
+    : typeof data.foodNameEn === 'string' && data.foodNameEn.trim()
+    ? data.foodNameEn.trim()
+    : 'Bangladeshi Meal';
+
+  const rawNotesBn =
+    typeof data.assumptionsAndNotesBn === 'string' ? data.assumptionsAndNotesBn.trim() : '';
+  const rawNotesEn =
+    typeof data.assumptionsAndNotesEn === 'string' ? data.assumptionsAndNotesEn.trim() : '';
+
+  const assumptionsAndNotesBn = rawNotesBn
+    ? rawNotesBn.includes('তেল') && rawNotesBn.includes('ওজন')
+      ? rawNotesBn
+      : `${rawNotesBn} (${DEFAULT_DISCLAIMER_BN})`
+    : DEFAULT_DISCLAIMER_BN;
+
+  const assumptionsAndNotesEn = rawNotesEn
+    ? rawNotesEn.toLowerCase().includes('oil') && rawNotesEn.toLowerCase().includes('weight')
+      ? rawNotesEn
+      : `${rawNotesEn} (${DEFAULT_DISCLAIMER_EN})`
+    : DEFAULT_DISCLAIMER_EN;
+
+  const qualityWarningBn =
+    typeof data.qualityWarningBn === 'string' && data.qualityWarningBn.trim()
+      ? data.qualityWarningBn.trim()
+      : isBlurryOrDark
+      ? 'ছবিটি ঝাপসা বা অন্ধকার হওয়ায় খাবারটি সঠিকভাবে চেনা যায়নি। অনুগ্রহ করে পর্যাপ্ত আলোতে পরিষ্কার ছবি তুলুন অথবা নিচে নিজ হাতে খাবারের তথ্য লিখুন।'
+      : !isFood || confidenceLevel === 'unrecognized'
+      ? 'ছবিতে কোনো স্পষ্ট খাবার শনাক্ত করা যায়নি। কোনো কাল্পনিক পুষ্টিমান যোগ করা হয়নি। আপনি চাইলে ম্যানুয়ালি খাবারের নাম ও পুষ্টিমান লিখতে পারেন।'
+      : confidenceLevel === 'low'
+      ? 'ছবিটি থেকে খাবারের পরিমাণ ও উপাদান সম্পর্কে কম নিশ্চয়তা পাওয়া গেছে। সংরক্ষণের আগে মানগুলো যাচাই করুন।'
+      : undefined;
+
+  const qualityWarningEn =
+    typeof data.qualityWarningEn === 'string' && data.qualityWarningEn.trim()
+      ? data.qualityWarningEn.trim()
+      : isBlurryOrDark
+      ? 'The image appears blurry or too dark to identify reliably. Please retake the photo in good lighting or enter the nutrition values manually below.'
+      : !isFood || confidenceLevel === 'unrecognized'
+      ? 'Could not confidently identify food in this image. No nutritional values were invented. You may enter the meal details manually below.'
+      : confidenceLevel === 'low'
+      ? 'Low confidence prediction due to visual ambiguity. Please double-check and edit the estimated values before saving.'
+      : undefined;
+
+  return {
+    isFood,
+    isBlurryOrDark,
+    confidenceLevel,
+    foodNameBn,
+    foodNameEn,
+    components,
+    estimatedServingGrams,
+    calories,
+    protein,
+    carbs,
+    fat,
+    fiber,
+    assumptionsAndNotesBn,
+    assumptionsAndNotesEn,
+    qualityWarningBn,
+    qualityWarningEn,
+  };
+}
+
+export async function analyzeFoodImage(
+  request: FoodImageAnalysisRequest
+): Promise<AIFoodRecognitionResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'GEMINI_API_KEY is not configured on the server. AI food recognition requires a valid server-side Gemini API key.'
+    );
+  }
+
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+
+  const systemInstruction = `You are an expert Bangladeshi & South Asian Clinical Nutritionist and Food Vision Analyst for the 'MyFit Journey' application.
+Your task is to analyze a photo of food and return accurate, conservative, structured nutritional estimates in both Bengali (বাংলা) and English.
+
+CRITICAL GUIDELINES:
+1. BANGLADESHI & BENGALI MEAL EXPERTISE:
+   - Accurately recognize Bangladeshi staples and dishes: সাদা ভাত (Steamed White Rice), লাল চালের ভাত (Brown/Red Rice), আটার রুটি (Whole Wheat Roti/Chapati), পরোটা (Paratha), ভুনা খিচুড়ি বা পাতলা খিচুড়ি (Khichuri), রুই/কাতলা/ইলিশ/তেলাপিয়া/পাঙ্গাশ মাছের ঝোল বা ভাজা (Fish Curry / Fried Fish), মুরগির ঝোল/ভুনা (Chicken Curry), গরুর মাংস ভুনা (Beef Bhuna), মসুর ডাল (Masoor Dal), ডিম সিদ্ধ/ভাজি/ভুনা (Egg Boiled/Omelette/Curry), শাক ভাজি (Leafy Greens like Palong/Lal Shak), আলু/বেগুন/শিম/মাছ ভর্তা (Bhorta), মিক্সড সবজি (Mixed Labra/Bhaji), সিঙ্গারা/সমুচা/পুরি (Snacks), টক দই/মিষ্টি দই (Yogurt), ফল ও সালাদ.
+2. MIXED MEAL COMPONENT BREAKDOWN:
+   - When a plate contains multiple items (e.g., rice, fish curry, and vegetables; khichuri with egg; roti with chicken curry; dal, rice, and fried fish), you MUST identify each individual component separately in the "components" array.
+   - Estimate the weight in grams (estimatedGrams) and nutritional breakdown (calories, protein, carbs, fat, fiber) for EACH component.
+   - Sum the components so that top-level estimatedServingGrams, calories, protein, carbs, fat, and fiber match the sum of all identified components.
+   - Even for a single food item, include 1 entry in "components" representing that item (or its main ingredients).
+3. UNCLEAR, BLURRY, DARK, OR NON-FOOD IMAGES:
+   - If the image is too blurry, too dark, obstructed, or does NOT show food:
+     - Set "isFood": false (if non-food) or "isBlurryOrDark": true (if blurry/dark).
+     - Set "confidenceLevel": "unrecognized" (or "low" if barely visible).
+     - NEVER invent nutritional values when the image cannot be confidently identified! Set estimatedServingGrams: 0, calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, and components: [] when unrecognized.
+     - Explain the issue clearly in "qualityWarningBn" and "qualityWarningEn" so the user can enter values manually or retake the photo.
+4. HONEST ASSUMPTIONS & LIMITATIONS DISCLAIMER:
+   - In "assumptionsAndNotesBn" and "assumptionsAndNotesEn", explain your portion assumptions (e.g., standard medium dinner plate, moderate home-style oil) AND explicitly state that cooking oil, added sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.`;
+
+  const prompt = `Analyze this food image carefully.
+Identify the dish or mixed meal in both Bengali (foodNameBn) and English (foodNameEn).
+Break down all visible food items/components on the plate with their estimated gram weights and macronutrients (calories, protein, carbs, fat, fiber).
+Return the analysis strictly following the JSON schema.`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [
+      {
+        inlineData: {
+          mimeType: request.mimeType,
+          data: request.imageBase64,
+        },
+      },
+      {
+        text: prompt,
+      },
+    ],
+    config: {
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          isFood: {
+            type: Type.BOOLEAN,
+            description: 'True if the image contains recognizable food or beverage.',
+          },
+          isBlurryOrDark: {
+            type: Type.BOOLEAN,
+            description: 'True if the image is too blurry, dark, or unclear for reliable analysis.',
+          },
+          confidenceLevel: {
+            type: Type.STRING,
+            enum: ['high', 'medium', 'low', 'unrecognized'],
+            description: 'Confidence level of the food identification and portion estimate.',
+          },
+          foodNameBn: {
+            type: Type.STRING,
+            description: 'Overall meal or food name in Bengali (e.g., সাদা ভাত, রুই মাছের ঝোল ও শাক ভাজি).',
+          },
+          foodNameEn: {
+            type: Type.STRING,
+            description: 'Overall meal or food name in English (e.g., Steamed Rice, Rui Fish Curry & Spinach Stir-Fry).',
+          },
+          components: {
+            type: Type.ARRAY,
+            description: 'Individual food components identified in the meal.',
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                nameBn: {
+                  type: Type.STRING,
+                  description: 'Component name in Bengali.',
+                },
+                nameEn: {
+                  type: Type.STRING,
+                  description: 'Component name in English.',
+                },
+                estimatedGrams: {
+                  type: Type.NUMBER,
+                  description: 'Estimated serving weight of this component in grams.',
+                },
+                calories: {
+                  type: Type.NUMBER,
+                  description: 'Estimated calories (kcal) for this component.',
+                },
+                protein: {
+                  type: Type.NUMBER,
+                  description: 'Estimated protein in grams for this component.',
+                },
+                carbs: {
+                  type: Type.NUMBER,
+                  description: 'Estimated carbohydrates in grams for this component.',
+                },
+                fat: {
+                  type: Type.NUMBER,
+                  description: 'Estimated fat in grams for this component.',
+                },
+                fiber: {
+                  type: Type.NUMBER,
+                  description: 'Estimated dietary fiber in grams for this component.',
+                },
+              },
+              required: [
+                'nameBn',
+                'nameEn',
+                'estimatedGrams',
+                'calories',
+                'protein',
+                'carbs',
+                'fat',
+                'fiber',
+              ],
+            },
+          },
+          estimatedServingGrams: {
+            type: Type.NUMBER,
+            description: 'Total estimated serving weight in grams across all components.',
+          },
+          calories: {
+            type: Type.NUMBER,
+            description: 'Total estimated calories (kcal).',
+          },
+          protein: {
+            type: Type.NUMBER,
+            description: 'Total estimated protein in grams.',
+          },
+          carbs: {
+            type: Type.NUMBER,
+            description: 'Total estimated carbohydrates in grams.',
+          },
+          fat: {
+            type: Type.NUMBER,
+            description: 'Total estimated fat in grams.',
+          },
+          fiber: {
+            type: Type.NUMBER,
+            description: 'Total estimated dietary fiber in grams.',
+          },
+          assumptionsAndNotesBn: {
+            type: Type.STRING,
+            description:
+              'Assumptions and visual estimation notes in Bengali, explicitly mentioning that cooking oil, sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.',
+          },
+          assumptionsAndNotesEn: {
+            type: Type.STRING,
+            description:
+              'Assumptions and visual estimation notes in English, explicitly mentioning that cooking oil, sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.',
+          },
+          qualityWarningBn: {
+            type: Type.STRING,
+            description:
+              'Optional warning in Bengali if the image is blurry, dark, low-confidence, or non-food.',
+          },
+          qualityWarningEn: {
+            type: Type.STRING,
+            description:
+              'Optional warning in English if the image is blurry, dark, low-confidence, or non-food.',
+          },
+        },
+        required: [
+          'isFood',
+          'isBlurryOrDark',
+          'confidenceLevel',
+          'foodNameBn',
+          'foodNameEn',
+          'components',
+          'estimatedServingGrams',
+          'calories',
+          'protein',
+          'carbs',
+          'fat',
+          'fiber',
+          'assumptionsAndNotesBn',
+          'assumptionsAndNotesEn',
+        ],
+      },
+    },
+  });
+
+  const text = response.text || '';
+  if (!text.trim()) {
+    throw new Error('Gemini returned an empty response for the food image.');
+  }
+
+  const parsed = JSON.parse(text);
+  return normalizeFoodRecognitionResult(parsed);
 }

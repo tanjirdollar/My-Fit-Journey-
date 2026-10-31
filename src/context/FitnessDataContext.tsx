@@ -506,7 +506,9 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           collection(db, `users/${uid}/activity_logs`),
           (snap) => {
             const items = snap.docs.map((d) => d.data() as ActivityLog);
-            setActivityLogs(items.sort((a, b) => b.date.localeCompare(a.date)));
+            setActivityLogs(
+              items.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''))
+            );
           },
           (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/activity_logs`)
         ),
@@ -514,7 +516,9 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           collection(db, `users/${uid}/body_measurements`),
           (snap) => {
             const items = snap.docs.map((d) => d.data() as BodyMeasurement);
-            setBodyMeasurements(items.sort((a, b) => a.date.localeCompare(b.date)));
+            setBodyMeasurements(
+              items.sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || '').localeCompare(b.createdAt || ''))
+            );
           },
           (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/body_measurements`)
         ),
@@ -530,7 +534,9 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           collection(db, `users/${uid}/sleep_logs`),
           (snap) => {
             const items = snap.docs.map((d) => d.data() as SleepLog);
-            setSleepLogs(items.sort((a, b) => b.date.localeCompare(a.date)));
+            setSleepLogs(
+              items.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''))
+            );
           },
           (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/sleep_logs`)
         ),
@@ -538,7 +544,9 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           collection(db, `users/${uid}/health_records`),
           (snap) => {
             const items = snap.docs.map((d) => d.data() as HealthRecord);
-            setHealthRecords(items.sort((a, b) => b.date.localeCompare(a.date)));
+            setHealthRecords(
+              items.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''))
+            );
           },
           (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/health_records`)
         ),
@@ -1024,7 +1032,9 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/body_measurements/${id}`);
       }
     } else {
-      setBodyMeasurements((prev) => [...prev, newLog].sort((a, b) => a.date.localeCompare(b.date)));
+      setBodyMeasurements((prev) =>
+        [...prev, newLog].sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || '').localeCompare(b.createdAt || ''))
+      );
     }
   };
 
@@ -1043,7 +1053,9 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } else {
       setBodyMeasurements((prev) =>
-        prev.map((m) => (m.id === cleanItem.id ? cleanItem : m)).sort((a, b) => a.date.localeCompare(b.date))
+        prev
+          .map((m) => (m.id === cleanItem.id ? cleanItem : m))
+          .sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || '').localeCompare(b.createdAt || ''))
       );
     }
   };
@@ -1378,6 +1390,28 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/ai_coach_notes/${item.id}`);
         }
       }
+      for (const favId of favoriteFoodIds) {
+        const docId = sanitizeDocId(favId);
+        const docRef = doc(db, `users/${user.uid}/favorite_foods`, docId);
+        try {
+          await deleteDoc(docRef);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/favorite_foods/${docId}`);
+        }
+      }
+      for (const customFood of customFoods) {
+        const docId = sanitizeDocId(customFood.id);
+        const docRef = doc(db, `users/${user.uid}/custom_foods`, docId);
+        try {
+          await deleteDoc(docRef);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/custom_foods/${docId}`);
+        }
+      }
+      localStorage.removeItem('myfit_favorites');
+      localStorage.removeItem('myfit_custom_foods');
+      setFavoriteFoodIds([]);
+      setCustomFoods([]);
     } else {
       localStorage.removeItem('myfit_demo_nutrition');
       localStorage.removeItem('myfit_demo_exercise');
@@ -1387,6 +1421,8 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       localStorage.removeItem('myfit_demo_sleep');
       localStorage.removeItem('myfit_demo_health');
       localStorage.removeItem('myfit_demo_ai');
+      localStorage.removeItem('myfit_favorites');
+      localStorage.removeItem('myfit_custom_foods');
       setNutritionLogs(INITIAL_NUTRITION);
       setExerciseLogs(INITIAL_EXERCISE);
       setActivityLogs(INITIAL_ACTIVITY);
@@ -1395,6 +1431,8 @@ export const FitnessDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSleepLogs(INITIAL_SLEEP);
       setHealthRecords(INITIAL_HEALTH_RECORDS);
       setAiCoachNotes([]);
+      setFavoriteFoodIds(DEFAULT_FAVORITE_FOOD_IDS);
+      setCustomFoods([]);
     }
   };
 
