@@ -32,6 +32,11 @@ async function startServer() {
   const smallJsonParser = express.json({ limit: '64kb' });
   const imageJsonParser = express.json({ limit: '6mb' });
 
+  // Healthcheck endpoint
+  app.get('/api/health', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
   // Server-side Gemini AI Coach endpoint
   app.post('/api/gemini/coach', smallJsonParser, async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -430,11 +435,18 @@ async function startServer() {
   });
 
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
+    const vitePromise = createViteServer({
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
+    app.use(async (req, res, next) => {
+      try {
+        const vite = await vitePromise;
+        vite.middlewares(req, res, next);
+      } catch (err) {
+        next(err);
+      }
+    });
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
