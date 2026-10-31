@@ -78,6 +78,12 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMeta, setErrorMeta] = useState<{
+    category?: string;
+    code?: string;
+    stage?: string;
+    correlationId?: string;
+  } | null>(null);
   const [requiresAuthError, setRequiresAuthError] = useState<boolean>(false);
 
   // Post-analysis editable confirmation state
@@ -137,12 +143,18 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
   const handleProcessFile = async (file: File | null | undefined) => {
     if (!file) return;
     setErrorMessage(null);
+    setErrorMeta(null);
     setRequiresAuthError(false);
     setAnalysisResult(null);
     setIsManualFallbackMode(false);
 
     const validation = validateClientImageFile(file);
     if (!validation.valid) {
+      setErrorMeta({
+        category: 'INVALID_IMAGE',
+        code: 'CLIENT_IMAGE_VALIDATION',
+        stage: 'IMAGE_PAYLOAD_VALIDATION',
+      });
       setErrorMessage(
         isBn
           ? validation.errorBn || 'অবৈধ ছবির ফাইল।'
@@ -153,9 +165,14 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
     setIsCompressing(true);
     try {
-      const compressed = await compressClientFoodImage(file, 1280, 0.82);
+      const compressed = await compressClientFoodImage(file, 1024, 0.8);
       setCompressedImage(compressed);
     } catch (err) {
+      setErrorMeta({
+        category: 'INVALID_IMAGE',
+        code: 'CLIENT_COMPRESSION_ERROR',
+        stage: 'IMAGE_PAYLOAD_VALIDATION',
+      });
       setErrorMessage(
         err instanceof Error
           ? err.message
@@ -181,16 +198,171 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
     setAnalysisResult(null);
     setIsManualFallbackMode(false);
     setErrorMessage(null);
+    setErrorMeta(null);
     setRequiresAuthError(false);
+  };
+
+  const formatCategorizedErrorMessage = (
+    status: number,
+    data: any,
+    isHtmlOrUnreachable: boolean
+  ): { message: string; isAuthFailure: boolean } => {
+    const category = typeof data?.category === 'string' ? data.category : '';
+    const code = typeof data?.code === 'string' ? data.code : '';
+    const serverMsgBn = typeof data?.errorBn === 'string' ? data.errorBn : '';
+    const serverMsgEn =
+      typeof data?.errorEn === 'string'
+        ? data.errorEn
+        : typeof data?.error === 'string'
+        ? data.error
+        : '';
+
+    // 1. Authentication failure
+    if (
+      status === 401 ||
+      status === 403 ||
+      category === 'AUTHENTICATION_FAILURE' ||
+      code === 'UNAUTHENTICATED' ||
+      code === 'MISSING_AUTH_HEADER' ||
+      code === 'INVALID_ID_TOKEN' ||
+      code === 'TOKEN_EXPIRED' ||
+      code === 'PROJECT_ID_MISMATCH'
+    ) {
+      return {
+        isAuthFailure: true,
+        message: isBn
+          ? serverMsgBn ||
+            'লগইন যাচাই ব্যর্থ হয়েছে (Authentication Failure)। অনুগ্রহ করে পুনরায় গুগল দিয়ে লগইন করে চেষ্টা করুন অথবা নিচে ম্যানুয়ালি লিখুন।'
+          : serverMsgEn ||
+            'Authentication failed. Please sign in with Google again or enter values manually.',
+      };
+    }
+
+    // 2. Invalid image
+    if (
+      status === 400 ||
+      status === 413 ||
+      category === 'INVALID_IMAGE' ||
+      code === 'UNSUPPORTED_MIME_TYPE' ||
+      code === 'MISSING_IMAGE_DATA' ||
+      code === 'MIME_MISMATCH' ||
+      code === 'INVALID_BASE64' ||
+      code === 'IMAGE_TOO_SMALL' ||
+      code === 'IMAGE_TOO_LARGE' ||
+      code === 'INVALID_IMAGE_HEADER' ||
+      code === 'PAYLOAD_TOO_LARGE'
+    ) {
+      return {
+        isAuthFailure: false,
+        message: isBn
+          ? serverMsgBn ||
+            'ছবির ফাইলটি সঠিক নয় বা সাইজ অনেক বড় (Invalid Image)। অনুগ্রহ করে ৪ মেগাবাইটের কম সাইজের একটি বৈধ JPEG, PNG বা WebP ছবি নির্বাচন করুন।'
+          : serverMsgEn ||
+            'Invalid image format or file size too large. Please upload a valid JPEG, PNG, or WebP photo under 4 MB.',
+      };
+    }
+
+    // 3. Gemini API configuration failure
+    if (
+      category === 'GEMINI_CONFIG_FAILURE' ||
+      code === 'GEMINI_CONFIG_ERROR'
+    ) {
+      return {
+        isAuthFailure: false,
+        message: isBn
+          ? serverMsgBn ||
+            'সার্ভারের Gemini API কনফিগারেশন ত্রুটিপূর্ণ (API Key বা Model সেটআপ সমস্যা)। আপনি নিচে ম্যানুয়ালি খাবারের তথ্য যোগ করতে পারেন।'
+          : serverMsgEn ||
+            'Gemini API configuration failure on the server. Please verify GEMINI_API_KEY configuration or enter meal values manually.',
+      };
+    }
+
+    // 4. Rate limit exceeded
+    if (
+      status === 429 ||
+      category === 'RATE_LIMIT_EXCEEDED' ||
+      code === 'RATE_LIMIT_EXCEEDED' ||
+      code === 'GEMINI_RATE_LIMIT'
+    ) {
+      const waitSec =
+        typeof data?.retryAfterSeconds === 'number'
+          ? data.retryAfterSeconds
+          : 30;
+      return {
+        isAuthFailure: false,
+        message: isBn
+          ? serverMsgBn ||
+            `অনুরোধের সীমা অতিক্রম করেছে (Rate Limit Exceeded)। অনুগ্রহ করে ${waitSec} সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন অথবা ম্যানুয়ালি লিখুন।`
+          : serverMsgEn ||
+            `Rate limit exceeded. Please wait ${waitSec} seconds before trying again, or enter meal details manually.`,
+      };
+    }
+
+    // 5. Gemini service unavailable
+    if (
+      status === 503 ||
+      category === 'GEMINI_SERVICE_UNAVAILABLE' ||
+      code === 'GEMINI_SERVICE_UNAVAILABLE'
+    ) {
+      return {
+        isAuthFailure: false,
+        message: isBn
+          ? serverMsgBn ||
+            'Gemini এআই সেবা সাময়িকভাবে অনুপলব্ধ (Service Unavailable)। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।'
+          : serverMsgEn ||
+            'Gemini AI vision service is temporarily unavailable. Please try again shortly or enter values manually.',
+      };
+    }
+
+    // 6. Invalid AI response
+    if (
+      status === 502 ||
+      category === 'INVALID_AI_RESPONSE' ||
+      code === 'INVALID_AI_RESPONSE'
+    ) {
+      return {
+        isAuthFailure: false,
+        message: isBn
+          ? serverMsgBn ||
+            'এআই থেকে বৈধ পুষ্টিমান পাওয়া যায়নি (Invalid AI Response)। অনুগ্রহ করে পরিষ্কার আলোতে তোলা ছবি দিয়ে আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।'
+          : serverMsgEn ||
+            'Received an invalid response from AI. Please try a clearer food photo or enter values manually.',
+      };
+    }
+
+    // 7. Unknown server error / Endpoint unreachable
+    if (isHtmlOrUnreachable || status === 404 || status === 405) {
+      return {
+        isAuthFailure: false,
+        message: isBn
+          ? 'সার্ভারের এআই এন্ডপয়েন্টের সাথে সংযোগ স্থাপন করা যায়নি (Server Endpoint Error)। অনুগ্রহ করে আবার চেষ্টা করুন বা ম্যানুয়ালি খাবারের তথ্য লিখুন।'
+          : 'Could not reach the AI food recognition server endpoint. Please try again or enter values manually.',
+      };
+    }
+
+    return {
+      isAuthFailure: false,
+      message: isBn
+        ? serverMsgBn ||
+          'সার্ভারে একটি অপ্রত্যাশিত ত্রুটি ঘটেছে (Unknown Server Error)। আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।'
+        : serverMsgEn ||
+          'An unexpected server error occurred while analyzing the food photo. Please try again or enter values manually.',
+    };
   };
 
   const handleAnalyzeImage = async () => {
     if (!compressedImage || isAnalyzing) return;
     setErrorMessage(null);
+    setErrorMeta(null);
     setRequiresAuthError(false);
 
     if (!user) {
       setRequiresAuthError(true);
+      setErrorMeta({
+        category: 'AUTHENTICATION_FAILURE',
+        code: 'UNAUTHENTICATED',
+        stage: 'AUTH_TOKEN_VERIFICATION',
+      });
       setErrorMessage(
         isBn
           ? 'এআই ফুড রিকগনিশন ব্যবহার করতে গুগল অ্যাকাউন্ট দিয়ে লগইন করা প্রয়োজন। লগইন করুন অথবা নিচে ম্যানুয়ালি খাবারের তথ্য লিখুন।'
@@ -201,44 +373,92 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
     setIsAnalyzing(true);
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch('/api/gemini/food-recognition', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'MyFitJourneyClient',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          imageBase64: compressedImage.base64Data,
-          mimeType: compressedImage.mimeType,
-          language: isBn ? 'bn' : 'en',
-        }),
-      });
+      const executeAnalysisRequest = async (forceRefreshToken: boolean) => {
+        const idToken = await user.getIdToken(forceRefreshToken);
+        return fetch('/api/gemini/food-recognition', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-Requested-With': 'MyFitJourneyClient',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            imageBase64: compressedImage.base64Data,
+            mimeType: compressedImage.mimeType,
+            language: isBn ? 'bn' : 'en',
+          }),
+        });
+      };
 
-      const data = await response.json().catch(() => null);
+      let response = await executeAnalysisRequest(false);
+      let rawText = await response.text();
+      let trimmed = rawText.trim();
+      let isHtmlResponse = trimmed.startsWith('<');
+      let data: any = null;
 
-      if (!response.ok) {
-        if (response.status === 401) {
+      if (!isHtmlResponse && trimmed) {
+        try {
+          data = JSON.parse(trimmed);
+        } catch {
+          data = null;
+        }
+      }
+
+      // If token expired or failed verification on first try, force refresh Firebase ID token once and retry
+      if (
+        response.status === 401 &&
+        data &&
+        (data.code === 'TOKEN_EXPIRED' || data.code === 'INVALID_ID_TOKEN')
+      ) {
+        response = await executeAnalysisRequest(true);
+        rawText = await response.text();
+        trimmed = rawText.trim();
+        isHtmlResponse = trimmed.startsWith('<');
+        data = null;
+        if (!isHtmlResponse && trimmed) {
+          try {
+            data = JSON.parse(trimmed);
+          } catch {
+            data = null;
+          }
+        }
+      }
+
+      if (!response.ok || !data || isHtmlResponse) {
+        const formatted = formatCategorizedErrorMessage(
+          response.status,
+          data,
+          isHtmlResponse || !data
+        );
+        if (formatted.isAuthFailure) {
           setRequiresAuthError(true);
         }
-        const serverErr =
-          data && typeof data.error === 'string'
-            ? data.error
-            : isBn
-            ? 'খাবারের ছবি বিশ্লেষণ করতে সমস্যা হয়েছে। আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।'
-            : 'Failed to analyze food photo. Please try again or enter values manually.';
-        throw new Error(serverErr);
+        setErrorMeta({
+          category: data?.category || (isHtmlResponse ? 'UNKNOWN_SERVER_ERROR' : undefined),
+          code: data?.code || `HTTP_${response.status}`,
+          stage: data?.stage,
+          correlationId:
+            data?.correlationId ||
+            response.headers.get('x-correlation-id') ||
+            undefined,
+        });
+        setErrorMessage(formatted.message);
+        return;
       }
 
       populateEditableFields(data as AIFoodRecognitionResult);
     } catch (err) {
+      setErrorMeta({
+        category: 'UNKNOWN_SERVER_ERROR',
+        code: 'NETWORK_ERROR',
+      });
       setErrorMessage(
-        err instanceof Error
+        err instanceof Error && err.message && !err.message.includes('Failed to fetch')
           ? err.message
           : isBn
-          ? 'নেটওয়ার্ক বা সার্ভার ত্রুটির কারণে বিশ্লেষণ ব্যর্থ হয়েছে।'
-          : 'Network or server error during food recognition.'
+          ? 'নেটওয়ার্ক বা সার্ভার সংযোগ ত্রুটির কারণে খাবারের ছবি বিশ্লেষণ করা যায়নি। ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।'
+          : 'Network connection error while analyzing food photo. Please check your connection and try again, or enter values manually.'
       );
     } finally {
       setIsAnalyzing(false);
@@ -248,6 +468,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
   const handleEnableManualEntry = () => {
     setIsManualFallbackMode(true);
     setErrorMessage(null);
+    setErrorMeta(null);
     setAnalysisResult({
       isFood: true,
       isBlurryOrDark: false,
@@ -700,8 +921,17 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-3">
             <div className="flex items-start gap-2.5 text-xs text-rose-900">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1 leading-relaxed font-medium">
-                {errorMessage}
+              <div className="flex-1 space-y-1">
+                <div className="leading-relaxed font-medium">{errorMessage}</div>
+                {errorMeta && (errorMeta.code || errorMeta.correlationId) && (
+                  <div className="text-[11px] text-rose-700/80 font-mono flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    {errorMeta.code && <span>Code: {errorMeta.code}</span>}
+                    {errorMeta.stage && <span>Stage: {errorMeta.stage}</span>}
+                    {errorMeta.correlationId && (
+                      <span>Ref: {errorMeta.correlationId}</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

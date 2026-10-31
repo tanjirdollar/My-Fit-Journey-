@@ -19,13 +19,40 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
+
+export const effectiveFirebaseConfig = {
+  ...firebaseAppletConfig,
+  projectId:
+    import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() ||
+    firebaseAppletConfig.projectId,
+  apiKey:
+    import.meta.env.VITE_FIREBASE_API_KEY?.trim() ||
+    firebaseAppletConfig.apiKey,
+  authDomain:
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() ||
+    firebaseAppletConfig.authDomain,
+  appId:
+    import.meta.env.VITE_FIREBASE_APP_ID?.trim() ||
+    firebaseAppletConfig.appId,
+  storageBucket:
+    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() ||
+    firebaseAppletConfig.storageBucket,
+  messagingSenderId:
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() ||
+    firebaseAppletConfig.messagingSenderId,
+  firestoreDatabaseId:
+    import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() ||
+    firebaseAppletConfig.firestoreDatabaseId,
+};
+
+export const ACTIVE_FIREBASE_PROJECT_ID = effectiveFirebaseConfig.projectId;
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(effectiveFirebaseConfig);
 
 // CRITICAL: Must pass firestoreDatabaseId according to integration instructions
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app, effectiveFirebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 

@@ -363,14 +363,75 @@ export function normalizeFoodRecognitionResult(raw: unknown): AIFoodRecognitionR
   };
 }
 
+export class FoodRecognitionServiceError extends Error {
+  statusCode: number;
+  code: string;
+  category:
+    | 'GEMINI_CONFIG_FAILURE'
+    | 'RATE_LIMIT_EXCEEDED'
+    | 'GEMINI_SERVICE_UNAVAILABLE'
+    | 'INVALID_AI_RESPONSE'
+    | 'UNKNOWN_SERVER_ERROR';
+  stage: 'GEMINI_API_CONFIG' | 'GEMINI_VISION_REQUEST' | 'AI_RESPONSE_PARSING';
+  messageBn: string;
+
+  constructor(options: {
+    messageEn: string;
+    messageBn: string;
+    statusCode: number;
+    code: string;
+    category:
+      | 'GEMINI_CONFIG_FAILURE'
+      | 'RATE_LIMIT_EXCEEDED'
+      | 'GEMINI_SERVICE_UNAVAILABLE'
+      | 'INVALID_AI_RESPONSE'
+      | 'UNKNOWN_SERVER_ERROR';
+    stage: 'GEMINI_API_CONFIG' | 'GEMINI_VISION_REQUEST' | 'AI_RESPONSE_PARSING';
+  }) {
+    super(options.messageEn);
+    this.name = 'FoodRecognitionServiceError';
+    this.statusCode = options.statusCode;
+    this.code = options.code;
+    this.category = options.category;
+    this.stage = options.stage;
+    this.messageBn = options.messageBn;
+  }
+}
+
+export function extractJsonFromModelText(rawText: string): string {
+  const trimmed = rawText.trim();
+  if (!trimmed) return '';
+
+  // Strip ```json ... ``` or ``` ... ``` markdown fences if present
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenceMatch && fenceMatch[1]) {
+    return fenceMatch[1].trim();
+  }
+
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return trimmed;
+}
+
 export async function analyzeFoodImage(
   request: FoodImageAnalysisRequest
 ): Promise<AIFoodRecognitionResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      'GEMINI_API_KEY is not configured on the server. AI food recognition requires a valid server-side Gemini API key.'
-    );
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    throw new FoodRecognitionServiceError({
+      messageEn:
+        'Gemini API configuration failure: GEMINI_API_KEY is missing or not configured on the server.',
+      messageBn:
+        'সার্ভারে Gemini API Key কনফিগার করা নেই। অনুগ্রহ করে সার্ভার এনভায়রনমেন্টে GEMINI_API_KEY সেট করুন অথবা ম্যানুয়ালি খাবারের তথ্য লিখুন।',
+      statusCode: 500,
+      code: 'GEMINI_CONFIG_ERROR',
+      category: 'GEMINI_CONFIG_FAILURE',
+      stage: 'GEMINI_API_CONFIG',
+    });
   }
 
   const ai = new GoogleGenAI({
@@ -407,167 +468,292 @@ Identify the dish or mixed meal in both Bengali (foodNameBn) and English (foodNa
 Break down all visible food items/components on the plate with their estimated gram weights and macronutrients (calories, protein, carbs, fat, fiber).
 Return the analysis strictly following the JSON schema.`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: [
-      {
-        inlineData: {
-          mimeType: request.mimeType,
-          data: request.imageBase64,
-        },
-      },
-      {
-        text: prompt,
-      },
-    ],
-    config: {
-      systemInstruction,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          isFood: {
-            type: Type.BOOLEAN,
-            description: 'True if the image contains recognizable food or beverage.',
-          },
-          isBlurryOrDark: {
-            type: Type.BOOLEAN,
-            description: 'True if the image is too blurry, dark, or unclear for reliable analysis.',
-          },
-          confidenceLevel: {
-            type: Type.STRING,
-            enum: ['high', 'medium', 'low', 'unrecognized'],
-            description: 'Confidence level of the food identification and portion estimate.',
-          },
-          foodNameBn: {
-            type: Type.STRING,
-            description: 'Overall meal or food name in Bengali (e.g., সাদা ভাত, রুই মাছের ঝোল ও শাক ভাজি).',
-          },
-          foodNameEn: {
-            type: Type.STRING,
-            description: 'Overall meal or food name in English (e.g., Steamed Rice, Rui Fish Curry & Spinach Stir-Fry).',
-          },
-          components: {
-            type: Type.ARRAY,
-            description: 'Individual food components identified in the meal.',
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                nameBn: {
-                  type: Type.STRING,
-                  description: 'Component name in Bengali.',
-                },
-                nameEn: {
-                  type: Type.STRING,
-                  description: 'Component name in English.',
-                },
-                estimatedGrams: {
-                  type: Type.NUMBER,
-                  description: 'Estimated serving weight of this component in grams.',
-                },
-                calories: {
-                  type: Type.NUMBER,
-                  description: 'Estimated calories (kcal) for this component.',
-                },
-                protein: {
-                  type: Type.NUMBER,
-                  description: 'Estimated protein in grams for this component.',
-                },
-                carbs: {
-                  type: Type.NUMBER,
-                  description: 'Estimated carbohydrates in grams for this component.',
-                },
-                fat: {
-                  type: Type.NUMBER,
-                  description: 'Estimated fat in grams for this component.',
-                },
-                fiber: {
-                  type: Type.NUMBER,
-                  description: 'Estimated dietary fiber in grams for this component.',
-                },
-              },
-              required: [
-                'nameBn',
-                'nameEn',
-                'estimatedGrams',
-                'calories',
-                'protein',
-                'carbs',
-                'fat',
-                'fiber',
-              ],
+  const candidateModels = [
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite-preview',
+  ];
+
+  let response: any = null;
+  let lastError: any = null;
+
+  for (const modelName of candidateModels) {
+    try {
+      response = await ai.models.generateContent({
+        model: modelName,
+        contents: [
+          {
+            inlineData: {
+              mimeType: request.mimeType,
+              data: request.imageBase64,
             },
           },
-          estimatedServingGrams: {
-            type: Type.NUMBER,
-            description: 'Total estimated serving weight in grams across all components.',
+          {
+            text: prompt,
           },
-          calories: {
-            type: Type.NUMBER,
-            description: 'Total estimated calories (kcal).',
-          },
-          protein: {
-            type: Type.NUMBER,
-            description: 'Total estimated protein in grams.',
-          },
-          carbs: {
-            type: Type.NUMBER,
-            description: 'Total estimated carbohydrates in grams.',
-          },
-          fat: {
-            type: Type.NUMBER,
-            description: 'Total estimated fat in grams.',
-          },
-          fiber: {
-            type: Type.NUMBER,
-            description: 'Total estimated dietary fiber in grams.',
-          },
-          assumptionsAndNotesBn: {
-            type: Type.STRING,
-            description:
-              'Assumptions and visual estimation notes in Bengali, explicitly mentioning that cooking oil, sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.',
-          },
-          assumptionsAndNotesEn: {
-            type: Type.STRING,
-            description:
-              'Assumptions and visual estimation notes in English, explicitly mentioning that cooking oil, sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.',
-          },
-          qualityWarningBn: {
-            type: Type.STRING,
-            description:
-              'Optional warning in Bengali if the image is blurry, dark, low-confidence, or non-food.',
-          },
-          qualityWarningEn: {
-            type: Type.STRING,
-            description:
-              'Optional warning in English if the image is blurry, dark, low-confidence, or non-food.',
+        ],
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              isFood: {
+                type: Type.BOOLEAN,
+                description:
+                  'True if the image contains recognizable food or beverage.',
+              },
+              isBlurryOrDark: {
+                type: Type.BOOLEAN,
+                description:
+                  'True if the image is too blurry, dark, or unclear for reliable analysis.',
+              },
+              confidenceLevel: {
+                type: Type.STRING,
+                enum: ['high', 'medium', 'low', 'unrecognized'],
+                description:
+                  'Confidence level of the food identification and portion estimate.',
+              },
+              foodNameBn: {
+                type: Type.STRING,
+                description:
+                  'Overall meal or food name in Bengali (e.g., সাদা ভাত, রুই মাছের ঝোল ও শাক ভাজি).',
+              },
+              foodNameEn: {
+                type: Type.STRING,
+                description:
+                  'Overall meal or food name in English (e.g., Steamed Rice, Rui Fish Curry & Spinach Stir-Fry).',
+              },
+              components: {
+                type: Type.ARRAY,
+                description:
+                  'Individual food components identified in the meal.',
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    nameBn: {
+                      type: Type.STRING,
+                      description: 'Component name in Bengali.',
+                    },
+                    nameEn: {
+                      type: Type.STRING,
+                      description: 'Component name in English.',
+                    },
+                    estimatedGrams: {
+                      type: Type.NUMBER,
+                      description:
+                        'Estimated serving weight of this component in grams.',
+                    },
+                    calories: {
+                      type: Type.NUMBER,
+                      description:
+                        'Estimated calories (kcal) for this component.',
+                    },
+                    protein: {
+                      type: Type.NUMBER,
+                      description:
+                        'Estimated protein in grams for this component.',
+                    },
+                    carbs: {
+                      type: Type.NUMBER,
+                      description:
+                        'Estimated carbohydrates in grams for this component.',
+                    },
+                    fat: {
+                      type: Type.NUMBER,
+                      description: 'Estimated fat in grams for this component.',
+                    },
+                    fiber: {
+                      type: Type.NUMBER,
+                      description:
+                        'Estimated dietary fiber in grams for this component.',
+                    },
+                  },
+                  required: [
+                    'nameBn',
+                    'nameEn',
+                    'estimatedGrams',
+                    'calories',
+                    'protein',
+                    'carbs',
+                    'fat',
+                    'fiber',
+                  ],
+                },
+              },
+              estimatedServingGrams: {
+                type: Type.NUMBER,
+                description:
+                  'Total estimated serving weight in grams across all components.',
+              },
+              calories: {
+                type: Type.NUMBER,
+                description: 'Total estimated calories (kcal).',
+              },
+              protein: {
+                type: Type.NUMBER,
+                description: 'Total estimated protein in grams.',
+              },
+              carbs: {
+                type: Type.NUMBER,
+                description: 'Total estimated carbohydrates in grams.',
+              },
+              fat: {
+                type: Type.NUMBER,
+                description: 'Total estimated fat in grams.',
+              },
+              fiber: {
+                type: Type.NUMBER,
+                description: 'Total estimated dietary fiber in grams.',
+              },
+              assumptionsAndNotesBn: {
+                type: Type.STRING,
+                description:
+                  'Assumptions and visual estimation notes in Bengali, explicitly mentioning that cooking oil, sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.',
+              },
+              assumptionsAndNotesEn: {
+                type: Type.STRING,
+                description:
+                  'Assumptions and visual estimation notes in English, explicitly mentioning that cooking oil, sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.',
+              },
+              qualityWarningBn: {
+                type: Type.STRING,
+                description:
+                  'Optional warning in Bengali if the image is blurry, dark, low-confidence, or non-food.',
+              },
+              qualityWarningEn: {
+                type: Type.STRING,
+                description:
+                  'Optional warning in English if the image is blurry, dark, low-confidence, or non-food.',
+              },
+            },
+            required: [
+              'isFood',
+              'isBlurryOrDark',
+              'confidenceLevel',
+              'foodNameBn',
+              'foodNameEn',
+              'components',
+              'estimatedServingGrams',
+              'calories',
+              'protein',
+              'carbs',
+              'fat',
+              'fiber',
+              'assumptionsAndNotesBn',
+              'assumptionsAndNotesEn',
+            ],
           },
         },
-        required: [
-          'isFood',
-          'isBlurryOrDark',
-          'confidenceLevel',
-          'foodNameBn',
-          'foodNameEn',
-          'components',
-          'estimatedServingGrams',
-          'calories',
-          'protein',
-          'carbs',
-          'fat',
-          'fiber',
-          'assumptionsAndNotesBn',
-          'assumptionsAndNotesEn',
-        ],
-      },
-    },
-  });
-
-  const text = response.text || '';
-  if (!text.trim()) {
-    throw new Error('Gemini returned an empty response for the food image.');
+      });
+      lastError = null;
+      break;
+    } catch (err: any) {
+      lastError = err;
+      const status = typeof err?.status === 'number' ? err.status : 0;
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      const lowerMsg = rawMsg.toLowerCase();
+      // If 429 rate limit or 503 unavailable on primary model, try fallback model
+      const isRetryableOnFallback =
+        status === 429 ||
+        status === 503 ||
+        status === 500 ||
+        lowerMsg.includes('resource_exhausted') ||
+        lowerMsg.includes('quota') ||
+        lowerMsg.includes('unavailable') ||
+        lowerMsg.includes('overloaded');
+      if (!isRetryableOnFallback) {
+        break;
+      }
+    }
   }
 
-  const parsed = JSON.parse(text);
+  if (lastError || !response) {
+    const err = lastError;
+    const status = typeof err?.status === 'number' ? err.status : 0;
+    const rawMsg = err instanceof Error ? err.message : String(err);
+    const lowerMsg = rawMsg.toLowerCase();
+
+    if (
+      status === 400 ||
+      status === 401 ||
+      status === 403 ||
+      lowerMsg.includes('api_key_invalid') ||
+      lowerMsg.includes('api key not valid') ||
+      lowerMsg.includes('permission_denied')
+    ) {
+      throw new FoodRecognitionServiceError({
+        messageEn:
+          'Gemini API configuration error: The server API key or model configuration was rejected.',
+        messageBn:
+          'সার্ভারের Gemini API কনফিগারেশন বা API Key সঠিক নয়। অনুগ্রহ করে অ্যাডমিন সেটিংস যাচাই করুন বা ম্যানুয়ালি খাবারের তথ্য লিখুন।',
+        statusCode: 500,
+        code: 'GEMINI_CONFIG_ERROR',
+        category: 'GEMINI_CONFIG_FAILURE',
+        stage: 'GEMINI_API_CONFIG',
+      });
+    }
+
+    if (
+      status === 429 ||
+      lowerMsg.includes('resource_exhausted') ||
+      lowerMsg.includes('quota') ||
+      lowerMsg.includes('rate limit')
+    ) {
+      throw new FoodRecognitionServiceError({
+        messageEn:
+          'Gemini API rate limit exceeded. Please wait a moment and try again, or enter meal details manually.',
+        messageBn:
+          'এআই সার্ভিসের অনুরোধের সীমা (Rate Limit) অতিক্রম করেছে। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন অথবা ম্যানুয়ালি খাবারের তথ্য লিখুন।',
+        statusCode: 429,
+        code: 'GEMINI_RATE_LIMIT',
+        category: 'RATE_LIMIT_EXCEEDED',
+        stage: 'GEMINI_VISION_REQUEST',
+      });
+    }
+
+    throw new FoodRecognitionServiceError({
+      messageEn:
+        'Gemini AI vision service is temporarily unavailable. Please try again shortly or enter values manually.',
+      messageBn:
+        'এআই ছবি বিশ্লেষণ সেবা সাময়িকভাবে অনুপলব্ধ। অনুগ্রহ করে একটু পর আবার চেষ্টা করুন বা ম্যানুয়ালি খাবারের তথ্য লিখুন।',
+      statusCode: 503,
+      code: 'GEMINI_SERVICE_UNAVAILABLE',
+      category: 'GEMINI_SERVICE_UNAVAILABLE',
+      stage: 'GEMINI_VISION_REQUEST',
+    });
+  }
+
+  const rawText = typeof response?.text === 'string' ? response.text : '';
+  const cleanedJsonText = extractJsonFromModelText(rawText);
+  if (!cleanedJsonText) {
+    throw new FoodRecognitionServiceError({
+      messageEn:
+        'Invalid AI response: Gemini returned an empty response for this image. Please try another photo or enter values manually.',
+      messageBn:
+        'এআই থেকে কোনো বৈধ ফলাফল পাওয়া যায়নি (Empty Response)। অনুগ্রহ করে পরিষ্কার আলোতে তোলা ছবি দিন অথবা ম্যানুয়ালি তথ্য লিখুন।',
+      statusCode: 502,
+      code: 'INVALID_AI_RESPONSE',
+      category: 'INVALID_AI_RESPONSE',
+      stage: 'AI_RESPONSE_PARSING',
+    });
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleanedJsonText);
+  } catch {
+    throw new FoodRecognitionServiceError({
+      messageEn:
+        'Invalid AI response: Failed to parse structured nutrition JSON from Gemini.',
+      messageBn:
+        'এআই-এর উত্তর সঠিকভাবে বিশ্লেষণ করা যায়নি (Invalid AI JSON)। অনুগ্রহ করে পুনরায় চেষ্টা করুন বা ম্যানুয়ালি তথ্য লিখুন।',
+      statusCode: 502,
+      code: 'INVALID_AI_RESPONSE',
+      category: 'INVALID_AI_RESPONSE',
+      stage: 'AI_RESPONSE_PARSING',
+    });
+  }
+
   return normalizeFoodRecognitionResult(parsed);
 }
+

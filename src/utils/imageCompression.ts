@@ -9,7 +9,7 @@ export const ALLOWED_CLIENT_IMAGE_MIMES = [
 export type AllowedClientImageMime = (typeof ALLOWED_CLIENT_IMAGE_MIMES)[number];
 
 export const MAX_RAW_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB raw camera photo allowed before client compression
-export const MAX_COMPRESSED_BYTES = 3.8 * 1024 * 1024; // 3.8 MB max after compression (server limit is 4 MB)
+export const MAX_COMPRESSED_BYTES = 3.5 * 1024 * 1024; // 3.5 MB max after compression (server limit is 4 MB)
 
 export interface ImageValidationCheck {
   valid: boolean;
@@ -17,7 +17,24 @@ export interface ImageValidationCheck {
   errorEn?: string;
 }
 
-export function validateClientImageFile(file: File | null | undefined): ImageValidationCheck {
+function resolveFileMimeType(file: File): string {
+  const rawType = (file.type || '').trim().toLowerCase();
+  if (rawType === 'image/jpg' || rawType === 'image/pjpeg') {
+    return 'image/jpeg';
+  }
+  if (rawType) {
+    return rawType;
+  }
+  const name = (file.name || '').trim().toLowerCase();
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+  if (name.endsWith('.png')) return 'image/png';
+  if (name.endsWith('.webp')) return 'image/webp';
+  return '';
+}
+
+export function validateClientImageFile(
+  file: File | null | undefined
+): ImageValidationCheck {
   if (!file) {
     return {
       valid: false,
@@ -26,8 +43,12 @@ export function validateClientImageFile(file: File | null | undefined): ImageVal
     };
   }
 
-  const normalizedType = (file.type || '').trim().toLowerCase();
-  if (!ALLOWED_CLIENT_IMAGE_MIMES.includes(normalizedType as AllowedClientImageMime)) {
+  const normalizedType = resolveFileMimeType(file);
+  if (
+    !ALLOWED_CLIENT_IMAGE_MIMES.includes(
+      normalizedType as AllowedClientImageMime
+    )
+  ) {
     return {
       valid: false,
       errorBn:
@@ -74,8 +95,8 @@ export interface CompressedFoodImage {
  */
 export function compressClientFoodImage(
   file: File,
-  maxDimension = 1280,
-  initialQuality = 0.82
+  maxDimension = 1024,
+  initialQuality = 0.8
 ): Promise<CompressedFoodImage> {
   return new Promise((resolve, reject) => {
     const validation = validateClientImageFile(file);
@@ -84,13 +105,16 @@ export function compressClientFoodImage(
       return;
     }
 
+    const inputMime = resolveFileMimeType(file) as AllowedClientImageMime;
+
     const reader = new FileReader();
     reader.onerror = () => {
       reject(new Error('Failed to read the selected image file.'));
     };
 
     reader.onload = () => {
-      const sourceDataUrl = typeof reader.result === 'string' ? reader.result : '';
+      const sourceDataUrl =
+        typeof reader.result === 'string' ? reader.result : '';
       if (!sourceDataUrl) {
         reject(new Error('Empty image data read from file.'));
         return;
@@ -129,7 +153,11 @@ export function compressClientFoodImage(
 
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            reject(new Error('Browser canvas context is unavailable for image compression.'));
+            reject(
+              new Error(
+                'Browser canvas context is unavailable for image compression.'
+              )
+            );
             return;
           }
 
@@ -138,18 +166,25 @@ export function compressClientFoodImage(
           ctx.fillRect(0, 0, targetW, targetH);
           ctx.drawImage(img, 0, 0, targetW, targetH);
 
-          // Prefer JPEG for optimal compression of camera photos, or keep WebP if original is WebP
-          const outputMime: AllowedClientImageMime =
-            file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+          // Preserve PNG if input is a small PNG, or WebP if WebP, otherwise JPEG for compact camera photos
+          const preferredMime: AllowedClientImageMime =
+            inputMime === 'image/png' && file.size <= 500 * 1024
+              ? 'image/png'
+              : inputMime === 'image/webp'
+              ? 'image/webp'
+              : 'image/jpeg';
 
-          let outDataUrl = canvas.toDataURL(outputMime, initialQuality);
-          let base64Part = outDataUrl.split(',')[1] || '';
+          let outDataUrl =
+            preferredMime === 'image/png'
+              ? canvas.toDataURL('image/png')
+              : canvas.toDataURL(preferredMime, initialQuality);
+          let base64Part = (outDataUrl.split(',')[1] || '').replace(/\s+/g, '');
           let estimatedBytes = Math.ceil((base64Part.length * 3) / 4);
 
-          // Second pass at lower quality if still > 1.8 MB
-          if (estimatedBytes > 1.8 * 1024 * 1024) {
-            outDataUrl = canvas.toDataURL('image/jpeg', 0.68);
-            base64Part = outDataUrl.split(',')[1] || '';
+          // Second pass at JPEG quality 0.70 if still > 850 KB
+          if (estimatedBytes > 850 * 1024) {
+            outDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            base64Part = (outDataUrl.split(',')[1] || '').replace(/\s+/g, '');
             estimatedBytes = Math.ceil((base64Part.length * 3) / 4);
           }
 
