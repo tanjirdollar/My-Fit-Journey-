@@ -29,7 +29,7 @@ export const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="h-44 flex items-center justify-center text-xs text-neutral-400 bg-neutral-50 rounded-xl border border-dashed border-neutral-200">
+      <div className="h-44 flex items-center justify-center text-xs text-neutral-400 bg-neutral-50 dark:bg-neutral-800/70 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800">
         No measurement history logged yet.
       </div>
     );
@@ -67,7 +67,7 @@ export const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
     <div className="w-full">
       {title && (
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-neutral-600">{title}</span>
+          <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{title}</span>
           <span className="text-xs text-neutral-400 font-medium">
             Latest: {data[data.length - 1]?.value} {unit}
           </span>

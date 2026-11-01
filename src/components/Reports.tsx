@@ -187,27 +187,27 @@ export const Reports: React.FC = () => {
   return (
     <div className="space-y-5 pb-16">
       {/* Header & Period Filter */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-xl font-black text-neutral-900 tracking-tight font-display">
+            <h2 className="text-xl font-black text-neutral-900 dark:text-neutral-100 tracking-tight font-display">
               {t('reports')} &amp; {t('trends')}
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {isBn
                 ? 'দৈনিক ও সাপ্তাহিক অগ্রগতি এবং সম্পূর্ণ ডাটা ব্যাকআপ ডাউনলোড'
                 : 'Progress trends, weekly averages, and personal data backups.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-neutral-100 p-1 rounded-2xl text-xs font-bold">
+          <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-2xl text-xs font-bold">
             {(['daily', 'weekly', 'monthly'] as const).map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
                 className={`px-3 py-1.5 rounded-xl capitalize transition-all ${
-                  period === p ? 'bg-white text-emerald-800 shadow-2xs' : 'text-neutral-600'
+                  period === p ? 'bg-white dark:bg-neutral-900 text-emerald-800 dark:text-emerald-300 shadow-2xs' : 'text-neutral-600 dark:text-neutral-400'
                 }`}
               >
                 {p}
@@ -217,28 +217,28 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* Aggregated KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200/60">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-neutral-50 dark:bg-neutral-800/70 p-3.5 rounded-2xl border border-neutral-200/60 dark:border-neutral-800">
           <div>
             <div className="text-[10px] uppercase font-bold text-neutral-400">Avg Calories</div>
-            <div className="text-xl font-black text-neutral-900">{avgCalories}</div>
+            <div className="text-xl font-black text-neutral-900 dark:text-neutral-100">{avgCalories}</div>
             <div className="text-[10px] text-neutral-400 font-medium">target: {profile.dailyCalorieTarget} kcal</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase font-bold text-emerald-700">Avg Protein</div>
-            <div className="text-xl font-black text-emerald-800">{avgProtein}g</div>
+            <div className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400">Avg Protein</div>
+            <div className="text-xl font-black text-emerald-800 dark:text-emerald-300">{avgProtein}g</div>
             <div className="text-[10px] text-emerald-600 font-medium">target: {profile.dailyProteinTargetGrams}g</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase font-bold text-teal-700">Avg Daily Steps</div>
-            <div className="text-xl font-black text-teal-900">{avgSteps.toLocaleString()}</div>
+            <div className="text-[10px] uppercase font-bold text-teal-700 dark:text-teal-400">Avg Daily Steps</div>
+            <div className="text-xl font-black text-teal-900 dark:text-teal-200">{avgSteps.toLocaleString()}</div>
             <div className="text-[10px] text-teal-600 font-medium">target: {profile.dailyStepsTarget}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase font-bold text-neutral-500">Waist Change</div>
-            <div className="text-xl font-black text-neutral-900">
+            <div className="text-[10px] uppercase font-bold text-neutral-500 dark:text-neutral-400">Waist Change</div>
+            <div className="text-xl font-black text-neutral-900 dark:text-neutral-100">
               {latestMeas.waistCm} cm
             </div>
-            <div className="text-[10px] text-emerald-700 font-bold">
+            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
               {waistDelta <= 0 ? `${waistDelta} cm change` : `+${waistDelta} cm`}
             </div>
           </div>
@@ -246,7 +246,7 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Waistline Reduction Trend Chart */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <SimpleLineChart
           data={waistChartData}
           title={isBn ? 'কোমরের মাপ অগ্রগতি (লক্ষ্য: ৮৫ সেমি)' : 'Waistline Progress toward 85cm & 82.5cm Goal'}
@@ -259,9 +259,9 @@ export const Reports: React.FC = () => {
 
       {/* Weekly Nutrition & Steps Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
           <div className="mb-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
               {isBn ? 'সাপ্তাহিক ক্যালোরি ইনটেক' : 'Weekly Calorie Intake Consistency'}
             </h3>
           </div>
@@ -274,9 +274,9 @@ export const Reports: React.FC = () => {
           />
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
           <div className="mb-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
               {isBn ? 'সাপ্তাহিক স্টেপস ও হাঁটা' : 'Weekly Step Count'}
             </h3>
           </div>
@@ -291,13 +291,13 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Data Export & Backup Section */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-extrabold text-neutral-900">
+            <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
               {isBn ? 'ব্যক্তিগত ডাটা ব্যাকআপ ও এক্সপোর্ট (UTF-8 BOM)' : 'Complete Personal Health Data Backup & CSV Export'}
             </h3>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {isBn
                 ? 'প্রোফাইল, পরিমাপ, খাবার, ব্যায়াম, স্টেপস, অভ্যাস, ঘুম, মেডিকেল রিপোর্ট, এআই কোচ নোট, প্রিয় খাবার ও নিজস্ব খাবার — সব ১১টি বিভাগ Excel-বান্ধব বাংলা UTF-8 ফরম্যাটে ডাউনলোড করুন।'
                 : 'Export all 11 data categories (Profile, Measurements, Nutrition, Exercise, Activity, Habits, Sleep, Health Records, AI Coach Notes, Favorites, and Custom Foods) with UTF-8 BOM for full Bengali Excel compatibility.'}
@@ -306,22 +306,22 @@ export const Reports: React.FC = () => {
         </div>
 
         {exportNotice && (
-          <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
+          <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 text-emerald-900 dark:text-emerald-200 text-xs font-bold flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{exportNotice}</span>
           </div>
         )}
 
         {/* Category selector & action buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200/60">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-neutral-50 dark:bg-neutral-800/70 p-3.5 rounded-2xl border border-neutral-200/60 dark:border-neutral-800">
           <div className="md:col-span-6">
-            <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+            <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
               {isBn ? 'CSV এক্সপোর্ট ফরম্যাট / বিভাগ নির্বাচন করুন' : 'Select CSV Export Format or Category'}
             </label>
             <select
               value={selectedCsvCategory}
               onChange={(e) => setSelectedCsvCategory(e.target.value as CsvExportCategory)}
-              className="w-full px-3 py-2 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
+              className="w-full px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
             >
               {csvCategoryOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -371,9 +371,9 @@ export const Reports: React.FC = () => {
                     : 'Complete Combined CSV downloaded!'
                 );
               }}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 text-xs font-bold transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 text-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-800/70 text-xs font-bold transition-colors"
             >
-              <FileSpreadsheet className="w-4 h-4 text-teal-700" />
+              <FileSpreadsheet className="w-4 h-4 text-teal-700 dark:text-teal-400" />
               <span>{isBn ? 'একক CSV টেবিল' : 'Combined CSV'}</span>
             </button>
 
@@ -387,9 +387,9 @@ export const Reports: React.FC = () => {
                     : 'Full JSON Backup downloaded!'
                 );
               }}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800/70 text-xs font-bold transition-colors"
             >
-              <FileCode className="w-4 h-4 text-emerald-700" />
+              <FileCode className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
               <span>{isBn ? 'JSON ব্যাকআপ' : 'JSON Backup'}</span>
             </button>
           </div>
@@ -405,7 +405,7 @@ export const Reports: React.FC = () => {
           <button
             type="button"
             onClick={() => setResetConfirmOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-50 hover:bg-rose-50 text-neutral-500 hover:text-rose-700 border border-neutral-200 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/70 hover:bg-rose-50 text-neutral-500 dark:text-neutral-400 hover:text-rose-700 border border-neutral-200 dark:border-neutral-800 text-xs font-semibold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{isBn ? 'ডাটা রিসেট' : 'Reset Logs'}</span>
@@ -416,11 +416,11 @@ export const Reports: React.FC = () => {
       {/* Reset Confirmation Dialog */}
       {resetConfirmOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl space-y-3">
-            <h3 className="text-base font-extrabold text-neutral-900">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl space-y-3">
+            <h3 className="text-base font-extrabold text-neutral-900 dark:text-neutral-100">
               {isBn ? 'আপনি কি নিশ্চিত?' : 'Reset All Logs?'}
             </h3>
-            <p className="text-xs text-neutral-600 leading-relaxed">
+            <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
               {isBn
                 ? 'এটি আপনার বর্তমান খাবার ও ব্যায়ামের সাময়িক রেকর্ডগুলো মুছে প্রাথমিক ডেমো অবস্থায় ফিরিয়ে আনবে।'
                 : 'This will reset your temporary logs back to the initial baseline.'}
@@ -429,7 +429,7 @@ export const Reports: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setResetConfirmOpen(false)}
-                className="w-1/2 py-2 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-700"
+                className="w-1/2 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-bold text-neutral-700 dark:text-neutral-300"
               >
                 {t('cancel')}
               </button>

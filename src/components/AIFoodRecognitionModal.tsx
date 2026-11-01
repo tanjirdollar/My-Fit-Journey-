@@ -714,7 +714,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-2xl max-h-[94vh] overflow-y-auto shadow-2xl border border-neutral-100 space-y-5">
+      <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-2xl max-h-[94vh] overflow-y-auto shadow-2xl border border-neutral-100 dark:border-neutral-800 space-y-5">
         {/* Mobile Drag Handle */}
         <div className="w-10 h-1.5 bg-neutral-200 rounded-full mx-auto sm:hidden" />
 
@@ -738,18 +738,18 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
         />
 
         {/* Modal Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-neutral-100 pb-4">
+        <div className="flex items-start justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-700 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-neutral-900">
+              <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100">
                 {isBn
                   ? 'এআই ফুড রিকগনিশন (AI Food Recognition)'
                   : 'AI Food Recognition'}
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                 {isBn
                   ? 'খাবারের ছবি তুলে বা গ্যালারি থেকে নিয়ে ক্যালোরি, প্রোটিন ও উপাদান বিশ্লেষণ করুন'
                   : 'Snap or upload a meal photo to identify Bangladeshi foods, portions & macros'}
@@ -760,7 +760,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 flex items-center justify-center shrink-0"
+            className="min-h-[44px] min-w-[44px] rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 flex items-center justify-center shrink-0"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -769,17 +769,17 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
         {/* Step 1: Image Input & Preview Area */}
         {!compressedImage ? (
-          <div className="p-6 sm:p-8 rounded-3xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 text-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-white shadow-xs border border-emerald-100 flex items-center justify-center mx-auto text-emerald-700">
+          <div className="p-6 sm:p-8 rounded-3xl border-2 border-dashed border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/30 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-neutral-900 shadow-xs border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-center mx-auto text-emerald-700 dark:text-emerald-400">
               <Camera className="w-7 h-7" />
             </div>
             <div className="space-y-1 max-w-md mx-auto">
-              <h3 className="text-sm sm:text-base font-bold text-neutral-900">
+              <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-neutral-100">
                 {isBn
                   ? 'আপনার খাবারের প্লেটের ছবি নির্বাচন করুন'
                   : 'Capture or Select Your Meal Photo'}
               </h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 {isBn
                   ? 'ভাত, মাছের ঝোল, ডাল, শাক-সবজি, খিচুড়ি বা রুটি-মাংসের ছবি তুলুন। JPEG, PNG এবং WebP সমর্থিত (বড় ছবি স্বয়ংক্রিয়ভাবে কমপ্রেস হবে)।'
                   : 'Supports single dishes or mixed Bengali plates (rice, fish curry, dal, bhaji, khichuri, roti). Supports JPEG, PNG & WebP.'}
@@ -801,9 +801,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
               <button
                 type="button"
                 onClick={() => galleryInputRef.current?.click()}
-                className="w-full sm:w-auto min-h-[48px] px-5 py-2.5 rounded-xl bg-white hover:bg-neutral-50 text-neutral-800 border border-neutral-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+                className="w-full sm:w-auto min-h-[48px] px-5 py-2.5 rounded-xl bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
               >
-                <ImageIcon className="w-4 h-4 text-emerald-700" />
+                <ImageIcon className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 <span>
                   {isBn ? 'গ্যালারি থেকে ছবি নিন' : 'Select from Gallery'}
                 </span>
@@ -811,9 +811,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
             </div>
           </div>
         ) : (
-          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-3">
+          <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200/80 dark:border-neutral-800 space-y-3">
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative w-full sm:w-44 h-44 rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200 shrink-0">
+              <div className="relative w-full sm:w-44 h-44 rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shrink-0">
                 <img
                   src={compressedImage.dataUrl}
                   alt="Selected food preview"
@@ -827,10 +827,10 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
               <div className="flex-1 space-y-3 w-full">
                 <div>
-                  <div className="text-xs font-bold text-neutral-800">
+                  <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
                     {isBn ? 'নির্বাচিত খাবারের ছবি' : 'Selected Meal Image'}
                   </div>
-                  <p className="text-xs text-neutral-500 mt-0.5">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                     {isBn
                       ? `মূল সাইজ: ${Math.round(
                           compressedImage.originalSizeBytes / 1024
@@ -851,9 +851,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                     type="button"
                     disabled={isAnalyzing}
                     onClick={() => cameraInputRef.current?.click()}
-                    className="min-h-[40px] px-3 py-1.5 rounded-xl bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="min-h-[40px] px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
-                    <Camera className="w-3.5 h-3.5 text-emerald-700" />
+                    <Camera className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                     <span>{isBn ? 'নতুন ছবি তুলুন' : 'Retake Photo'}</span>
                   </button>
 
@@ -861,9 +861,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                     type="button"
                     disabled={isAnalyzing}
                     onClick={() => galleryInputRef.current?.click()}
-                    className="min-h-[40px] px-3 py-1.5 rounded-xl bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="min-h-[40px] px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
-                    <ImageIcon className="w-3.5 h-3.5 text-emerald-700" />
+                    <ImageIcon className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                     <span>{isBn ? 'ছবি পরিবর্তন করুন' : 'Replace Image'}</span>
                   </button>
 
@@ -871,7 +871,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                     type="button"
                     disabled={isAnalyzing}
                     onClick={handleRemoveImage}
-                    className="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 hover:bg-rose-100 text-rose-700 dark:text-rose-400 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>{isBn ? 'ছবি মুছে ফেলুন' : 'Remove Image'}</span>
@@ -914,8 +914,8 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
         {/* Compressing Indicator */}
         {isCompressing && (
-          <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 text-xs font-medium text-neutral-700 flex items-center justify-center gap-2">
-            <RefreshCw className="w-4 h-4 animate-spin text-emerald-700" />
+          <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center justify-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin text-emerald-700 dark:text-emerald-400" />
             <span>
               {isBn
                 ? 'ছবিটি অপ্টিমাইজ ও কমপ্রেস করা হচ্ছে...'
@@ -926,8 +926,8 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
 
         {/* Error & Recovery Banner */}
         {errorMessage && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-3">
-            <div className="flex items-start gap-2.5 text-xs text-rose-900">
+          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 space-y-3">
+            <div className="flex items-start gap-2.5 text-xs text-rose-900 dark:text-rose-200">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
                 <div className="leading-relaxed font-medium">{errorMessage}</div>
@@ -968,7 +968,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                   type="button"
                   onClick={handleAnalyzeImage}
                   disabled={isAnalyzing}
-                  className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-white border border-rose-300 hover:bg-rose-100 text-rose-800 text-xs font-semibold flex items-center gap-1.5"
+                  className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-rose-300 dark:border-rose-700/70 hover:bg-rose-100 text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>
@@ -1002,9 +1002,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
           <form onSubmit={handleConfirmAddToTracker} className="space-y-5 pt-1">
             {/* Confidence Level & Status Header */}
             {analysisResult && (
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200/80">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200/80 dark:border-neutral-800">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-neutral-700">
+                  <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
                     {isBn ? 'এআই শনাক্তকরণ ফলাফল:' : 'AI Recognition Status:'}
                   </span>
                   <span
@@ -1017,7 +1017,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                   </span>
                 </div>
 
-                <span className="text-[11px] text-neutral-500">
+                <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
                   {isBn
                     ? 'সংরক্ষণের আগে যেকোনো মান পরিবর্তন করতে পারবেন'
                     : 'Review & edit any field below before saving'}
@@ -1033,7 +1033,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                 analysisResult.confidenceLevel === 'unrecognized' ||
                 analysisResult.qualityWarningBn ||
                 analysisResult.qualityWarningEn) && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-start gap-2.5 leading-relaxed">
+                <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-2.5 leading-relaxed">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-bold">
@@ -1053,9 +1053,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
               )}
 
             {/* Mandatory Visual Estimation Disclaimer (Cooking oil, sugar, hidden ingredients, serving weight) */}
-            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-xs text-emerald-950 space-y-1.5 leading-relaxed">
-              <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-                <Info className="w-4 h-4 text-emerald-700 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/70 text-xs text-emerald-950 dark:text-emerald-200 space-y-1.5 leading-relaxed">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-900 dark:text-emerald-200">
+                <Info className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                 <span>
                   {isBn
                     ? 'অনুমান ও সীমাবদ্ধতা (Assumptions & Limitations):'
@@ -1063,7 +1063,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                 </span>
               </div>
               <p className="text-emerald-900/90">{assumptionsNote}</p>
-              <p className="text-[11px] font-medium text-emerald-800 pt-0.5 border-t border-emerald-200/60">
+              <p className="text-[11px] font-medium text-emerald-800 dark:text-emerald-300 pt-0.5 border-t border-emerald-200/60 dark:border-emerald-800/70">
                 {isBn
                   ? 'স্মরণীয়: কেবল ছবির মাধ্যমে রান্নার তেল, অতিরিক্ত চিনি, লুকানো উপাদান এবং খাবারের প্রকৃত ওজন (গ্রাম) শতভাগ নিশ্চিতভাবে নির্ধারণ করা সম্ভব নয়।'
                   : 'Important: Cooking oil, added sugar, hidden ingredients, and actual serving weight are difficult to determine from an image alone.'}
@@ -1071,9 +1071,9 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
             </div>
 
             {/* Meal Category & Date Selection */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200/80 dark:border-neutral-800">
               <div className="sm:col-span-7">
-                <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5">
                   {isBn ? 'খাবারের বেলা (Meal Category)' : 'Meal Category'}
                 </label>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -1085,7 +1085,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                       className={`min-h-[40px] px-2 py-1.5 rounded-xl text-xs font-semibold capitalize transition-colors truncate ${
                         targetMealType === m
                           ? 'bg-neutral-900 text-white'
-                          : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                          : 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                       }`}
                     >
                       {t(m)}
@@ -1095,7 +1095,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
               </div>
 
               <div className="sm:col-span-5">
-                <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5">
                   {isBn ? 'তারিখ (Date)' : 'Log Date'}
                 </label>
                 <div className="relative">
@@ -1106,7 +1106,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                     onChange={(e) =>
                       setTargetDate(e.target.value || initialDate)
                     }
-                    className="w-full min-h-[40px] pl-9 pr-3 py-1.5 bg-white border border-neutral-200 rounded-xl text-xs font-semibold text-neutral-800 tabular-nums focus:outline-hidden focus:border-emerald-600"
+                    className="w-full min-h-[40px] pl-9 pr-3 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums focus:outline-hidden focus:border-emerald-600"
                   />
                 </div>
               </div>
@@ -1115,7 +1115,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
             {/* Editable Food Name (Bengali & English) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
                   {isBn ? 'খাবারের নাম (বাংলা) *' : 'Food Name (Bengali) *'}
                 </label>
                 <input
@@ -1128,12 +1128,12 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                       ? 'যেমন: সাদা ভাত, রুই মাছের ঝোল ও শাক ভাজি'
                       : 'e.g. সাদা ভাত ও মাছের ঝোল'
                   }
-                  className="w-full min-h-[44px] px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-semibold text-neutral-900 focus:outline-hidden focus:border-emerald-600"
+                  className="w-full min-h-[44px] px-3.5 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
                   {isBn ? 'খাবারের নাম (ইংরেজি) *' : 'Food Name (English) *'}
                 </label>
                 <input
@@ -1142,21 +1142,21 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                   value={foodNameEn}
                   onChange={(e) => setFoodNameEn(e.target.value)}
                   placeholder="e.g. Steamed Rice, Rui Fish Curry & Spinach"
-                  className="w-full min-h-[44px] px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-semibold text-neutral-900 focus:outline-hidden focus:border-emerald-600"
+                  className="w-full min-h-[44px] px-3.5 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
             </div>
 
             {/* Editable Identified Food Components (for Single or Mixed Bengali Meals) */}
-            <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-3">
+            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200/80 dark:border-neutral-800 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-xs font-bold text-neutral-800">
+                  <h4 className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
                     {isBn
                       ? `শনাক্তকৃত খাবারের উপাদানসমূহ (${components.length}টি পদ)`
                       : `Identified Meal Components (${components.length})`}
                   </h4>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                     {isBn
                       ? 'মিশ্র খাবারের প্রতিটি পদের ওজন (গ্রাম) পরিবর্তন করলে মোট ক্যালোরি ও প্রোটিন স্বয়ংক্রিয়ভাবে হিসাব হবে'
                       : 'Adjusting any component weight (g) or macro automatically updates the meal totals'}
@@ -1166,7 +1166,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAddComponent}
-                  className="min-h-[36px] px-3 py-1.5 rounded-xl bg-white border border-neutral-200 hover:bg-emerald-50 hover:border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center gap-1 transition-colors"
+                  className="min-h-[36px] px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:bg-emerald-50 hover:border-emerald-300 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{isBn ? 'উপাদান যোগ করুন' : 'Add Component'}</span>
@@ -1174,7 +1174,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
               </div>
 
               {components.length === 0 ? (
-                <div className="p-3 rounded-xl bg-white border border-neutral-200/70 text-xs text-neutral-500 text-center">
+                <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/70 dark:border-neutral-800 text-xs text-neutral-500 dark:text-neutral-400 text-center">
                   {isBn
                     ? 'কোনো আলাদা উপাদান তালিকাভুক্ত নেই। আপনি চাইলে "+ উপাদান যোগ করুন" বাটনে ক্লিক করতে পারেন অথবা নিচে সরাসরি মোট পুষ্টিমান লিখতে পারেন।'
                     : 'No individual components listed. Click "+ Add Component" to break down a mixed meal or edit the total values directly below.'}
@@ -1184,7 +1184,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                   {components.map((comp) => (
                     <div
                       key={comp.id}
-                      className="p-3 rounded-xl bg-white border border-neutral-200/90 space-y-2"
+                      className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 space-y-2"
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                         <div className="sm:col-span-4">
@@ -1201,7 +1201,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 e.target.value
                               )
                             }
-                            className="w-full min-h-[36px] px-2.5 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-900"
+                            className="w-full min-h-[36px] px-2.5 py-1 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-semibold text-neutral-900 dark:text-neutral-100"
                           />
                         </div>
 
@@ -1219,18 +1219,18 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 e.target.value
                               )
                             }
-                            className="w-full min-h-[36px] px-2.5 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-700"
+                            className="w-full min-h-[36px] px-2.5 py-1 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300"
                           />
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="block text-[10px] text-emerald-700 font-semibold">
+                          <label className="block text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
                             {isBn ? 'ওজন (গ্রাম)' : 'Weight (g)'}
                           </label>
                           <input
                             type="number"
-                            min="1"
-                            step="5"
+                            min="0.1"
+                            step="any"
                             value={comp.estimatedGrams}
                             onChange={(e) =>
                               handleComponentGramChange(
@@ -1238,7 +1238,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full min-h-[36px] px-2.5 py-1 bg-emerald-50/50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-900 tabular-nums"
+                            className="w-full min-h-[36px] px-2.5 py-1 bg-emerald-50/50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-lg text-xs font-bold text-emerald-900 dark:text-emerald-200 tabular-nums"
                           />
                         </div>
 
@@ -1255,12 +1255,13 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                       </div>
 
                       {/* Component Macro Row */}
-                      <div className="grid grid-cols-5 gap-2 pt-1 border-t border-neutral-100 text-[11px]">
+                      <div className="grid grid-cols-5 gap-2 pt-1 border-t border-neutral-100 dark:border-neutral-800 text-[11px]">
                         <div>
                           <span className="text-neutral-400 block">kcal</span>
                           <input
                             type="number"
                             min="0"
+                            step="any"
                             value={comp.calories}
                             onChange={(e) =>
                               handleComponentFieldChange(
@@ -1269,17 +1270,17 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 parseInt(e.target.value, 10) || 0
                               )
                             }
-                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 border border-neutral-200 rounded-md font-semibold tabular-nums"
+                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-md font-semibold tabular-nums"
                           />
                         </div>
                         <div>
-                          <span className="text-emerald-700 block">
+                          <span className="text-emerald-700 dark:text-emerald-400 block">
                             {isBn ? 'প্রোটিন (g)' : 'Prot (g)'}
                           </span>
                           <input
                             type="number"
                             min="0"
-                            step="0.5"
+                            step="any"
                             value={comp.protein}
                             onChange={(e) =>
                               handleComponentFieldChange(
@@ -1288,7 +1289,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 border border-neutral-200 rounded-md font-semibold text-emerald-800 tabular-nums"
+                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-md font-semibold text-emerald-800 dark:text-emerald-300 tabular-nums"
                           />
                         </div>
                         <div>
@@ -1298,7 +1299,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                           <input
                             type="number"
                             min="0"
-                            step="0.5"
+                            step="any"
                             value={comp.carbs}
                             onChange={(e) =>
                               handleComponentFieldChange(
@@ -1307,7 +1308,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 border border-neutral-200 rounded-md font-semibold tabular-nums"
+                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-md font-semibold tabular-nums"
                           />
                         </div>
                         <div>
@@ -1317,7 +1318,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                           <input
                             type="number"
                             min="0"
-                            step="0.5"
+                            step="any"
                             value={comp.fat}
                             onChange={(e) =>
                               handleComponentFieldChange(
@@ -1326,7 +1327,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 border border-neutral-200 rounded-md font-semibold tabular-nums"
+                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-md font-semibold tabular-nums"
                           />
                         </div>
                         <div>
@@ -1336,7 +1337,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                           <input
                             type="number"
                             min="0"
-                            step="0.5"
+                            step="any"
                             value={comp.fiber}
                             onChange={(e) =>
                               handleComponentFieldChange(
@@ -1345,7 +1346,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 border border-neutral-200 rounded-md font-semibold tabular-nums"
+                            className="w-full px-2 py-1 mt-0.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-md font-semibold tabular-nums"
                           />
                         </div>
                       </div>
@@ -1356,14 +1357,14 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
             </div>
 
             {/* Editable Overall Serving Size (Grams) & Total Macronutrients */}
-            <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200/80 space-y-3">
+            <div className="p-4 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/70 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-neutral-900">
+                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
                   {isBn
                     ? 'মোট খাবারের পরিমাণ ও পুষ্টিমান (সম্পাদনাযোগ্য)'
                     : 'Total Serving Size & Nutrition Summary (Editable)'}
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-800 tabular-nums">
+                <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 tabular-nums">
                   {servingGrams}g · {calories} kcal
                 </span>
               </div>
@@ -1371,13 +1372,13 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
                 {/* Serving Quantity in Grams */}
                 <div>
-                  <label className="block text-[11px] font-bold text-emerald-800 mb-1">
+                  <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
                     {isBn ? 'মোট ওজন (g)' : 'Serving (g)'}
                   </label>
                   <input
                     type="number"
-                    min="1"
-                    step="5"
+                    min="0.1"
+                    step="any"
                     required
                     value={servingGrams}
                     onChange={(e) =>
@@ -1385,96 +1386,97 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                         parseFloat(e.target.value) || 0
                       )
                     }
-                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs sm:text-sm font-bold text-emerald-950 tabular-nums"
+                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white dark:bg-neutral-900 border border-emerald-300 dark:border-emerald-700/70 rounded-xl text-xs sm:text-sm font-bold text-emerald-950 dark:text-emerald-200 tabular-nums"
                   />
                 </div>
 
                 {/* Calories */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                     {isBn ? 'ক্যালোরি (kcal)' : 'Calories'}
                   </label>
                   <input
                     type="number"
                     min="0"
+                    step="any"
                     required
                     value={calories}
                     onChange={(e) =>
                       setCalories(Math.max(0, parseInt(e.target.value, 10) || 0))
                     }
-                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
 
                 {/* Protein */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-emerald-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mb-1">
                     {isBn ? 'প্রোটিন (g)' : 'Protein (g)'}
                   </label>
                   <input
                     type="number"
                     min="0"
-                    step="0.5"
+                    step="any"
                     required
                     value={protein}
                     onChange={(e) =>
                       setProtein(Math.max(0, parseFloat(e.target.value) || 0))
                     }
-                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-emerald-800 tabular-nums"
+                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-300 tabular-nums"
                   />
                 </div>
 
                 {/* Carbohydrates */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
                     {isBn ? 'শর্করা (g)' : 'Carbs (g)'}
                   </label>
                   <input
                     type="number"
                     min="0"
-                    step="0.5"
+                    step="any"
                     required
                     value={carbs}
                     onChange={(e) =>
                       setCarbs(Math.max(0, parseFloat(e.target.value) || 0))
                     }
-                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
 
                 {/* Fat */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
                     {isBn ? 'চর্বি (g)' : 'Fat (g)'}
                   </label>
                   <input
                     type="number"
                     min="0"
-                    step="0.5"
+                    step="any"
                     required
                     value={fat}
                     onChange={(e) =>
                       setFat(Math.max(0, parseFloat(e.target.value) || 0))
                     }
-                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
 
                 {/* Fiber */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
                     {isBn ? 'ফাইবার (g)' : 'Fiber (g)'}
                   </label>
                   <input
                     type="number"
                     min="0"
-                    step="0.5"
+                    step="any"
                     required
                     value={fiber}
                     onChange={(e) =>
                       setFiber(Math.max(0, parseFloat(e.target.value) || 0))
                     }
-                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[42px] px-2.5 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
               </div>
@@ -1486,7 +1488,7 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
                 type="button"
                 disabled={isAnalyzing || isSaving}
                 onClick={handleAnalyzeImage}
-                className="w-full sm:w-2/5 min-h-[48px] px-4 py-2.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                className="w-full sm:w-2/5 min-h-[48px] px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${isAnalyzing ? 'animate-spin' : ''}`}

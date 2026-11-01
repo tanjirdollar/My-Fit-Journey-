@@ -183,13 +183,13 @@ export const HabitsTracker: React.FC = () => {
   return (
     <div className="space-y-5 pb-16">
       {/* Habits Header & Date Selector */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-black text-neutral-900 tracking-tight font-display">
+            <h2 className="text-xl font-black text-neutral-900 dark:text-neutral-100 tracking-tight font-display">
               {t('habits')} &amp; {isBn ? 'জীবনধারা' : 'Lifestyle Habits'}
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {isBn
                 ? 'স্থায়ীভাবে পেট কমাতে ও সুস্থ থাকতে দৈনন্দিন ছোট ছোট অভ্যাসের ধারাবাহিকতা'
                 : 'Sustainable fat reduction through daily hydration, sitting relief, and consistent routines.'}
@@ -199,7 +199,7 @@ export const HabitsTracker: React.FC = () => {
           {/* Custom Date Input Picker */}
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <div className="relative flex items-center">
-              <Calendar className="w-3.5 h-3.5 text-emerald-700 absolute left-3 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 absolute left-3 pointer-events-none" />
               <input
                 type="date"
                 value={selectedDate}
@@ -208,14 +208,14 @@ export const HabitsTracker: React.FC = () => {
                   if (e.target.value) setSelectedDate(e.target.value);
                 }}
                 aria-label={isBn ? 'তারিখ নির্বাচন করুন' : 'Select date'}
-                className="pl-8 pr-3 py-1.5 bg-neutral-100 hover:bg-neutral-200/70 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
+                className="pl-8 pr-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-800 dark:text-neutral-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
             {selectedDate !== today && (
               <button
                 type="button"
                 onClick={() => setSelectedDate(today)}
-                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100 transition-colors"
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70 text-[11px] font-bold hover:bg-emerald-100 transition-colors"
               >
                 {isBn ? 'আজ' : 'Today'}
               </button>
@@ -246,7 +246,7 @@ export const HabitsTracker: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${
                   isSelected
                     ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
-                    : 'bg-neutral-50 text-neutral-600 border-neutral-200/70 hover:bg-neutral-100'
+                    : 'bg-neutral-50 dark:bg-neutral-800/70 text-neutral-600 dark:text-neutral-400 border-neutral-200/70 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 }`}
               >
                 <span>{d.isToday ? d.dayLabel : `${d.dayLabel} ${d.dayNum}`}</span>
@@ -265,21 +265,21 @@ export const HabitsTracker: React.FC = () => {
 
       {/* Feedback Banner */}
       {feedbackMsg && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+        <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 text-emerald-900 dark:text-emerald-200 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{feedbackMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 text-rose-800 dark:text-rose-300 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
           <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Hydration Tracker Card */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -287,7 +287,7 @@ export const HabitsTracker: React.FC = () => {
                 <Droplets className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-extrabold text-neutral-900">
+                <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
                   {isBn ? 'পানি পান ট্র্যাকার (Hydration)' : 'Daily Water Tracker'}
                 </h3>
                 <span className="text-[10px] font-bold text-sky-700">
@@ -299,7 +299,7 @@ export const HabitsTracker: React.FC = () => {
                 </span>
               </div>
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               {isBn
                 ? '১ গ্লাস ≈ ২৫০ মিলি। মেটাবলিজম ও হজমের জন্য দৈনিক ৯ গ্লাস (২.২৫ লিটার) পানি পান করুন।'
                 : '1 glass ≈ 250ml. Drink 9 glasses (~2.25L) daily to support metabolism and digestion.'}
@@ -331,7 +331,7 @@ export const HabitsTracker: React.FC = () => {
                 className={`h-11 rounded-xl flex flex-col items-center justify-center border transition-all ${
                   isFilled
                     ? 'bg-sky-500 border-sky-600 text-white shadow-2xs scale-100'
-                    : 'bg-neutral-50 border-neutral-200/80 text-neutral-300 hover:border-sky-300'
+                    : 'bg-neutral-50 dark:bg-neutral-800/70 border-neutral-200/80 dark:border-neutral-800 text-neutral-300 hover:border-sky-300'
                 }`}
                 title={`Glass ${idx + 1}`}
               >
@@ -343,12 +343,12 @@ export const HabitsTracker: React.FC = () => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
+        <div className="flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800">
           <button
             type="button"
             onClick={handleWaterDecrement}
             disabled={selectedDateHabit.waterGlasses === 0}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-40"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800/70 disabled:opacity-40"
           >
             <Minus className="w-3.5 h-3.5" />
             <span>- 1 {isBn ? 'গ্লাস' : 'Glass'}</span>
@@ -366,17 +366,17 @@ export const HabitsTracker: React.FC = () => {
       </div>
 
       {/* Sedentary Desk Sitting Relief Card */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
               <Armchair className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-neutral-900">
+              <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
                 {isBn ? 'ডেস্কে কাজের বিরতি ও হাঁটা' : 'Sedentary Work & Desk Breaks'}
               </h3>
-              <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 leading-relaxed">
                 {isBn
                   ? 'একটানা ৮ ঘণ্টা বসে কাজ করলে রক্তে ইনসুলিন অকার্যকর হয় এবং পেটে মেদ জমে। প্রতি ৫০ মিনিট পর চেয়ার ছেড়ে ২ মিনিট হালকা হাঁটুন।'
                   : 'Prolonged sitting blunts glucose clearance and concentrates visceral fat. Stand and walk for 2 minutes every hour.'}
@@ -385,13 +385,13 @@ export const HabitsTracker: React.FC = () => {
           </div>
 
           <div className="text-right shrink-0">
-            <span className="text-2xl font-black text-amber-900">{selectedDateHabit.sittingBreaks}</span>
+            <span className="text-2xl font-black text-amber-900 dark:text-amber-200">{selectedDateHabit.sittingBreaks}</span>
             <div className="text-[10px] text-neutral-400 font-semibold">{t('breakCounter')}</div>
           </div>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs text-amber-800 font-medium">
+        <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
             {isBn ? 'লক্ষ্য: অন্তত ৫-৬ বার বিরতি নেওয়া' : 'Target: 5-6 short breaks during workday'}
           </span>
           <div className="flex items-center gap-2">
@@ -399,7 +399,7 @@ export const HabitsTracker: React.FC = () => {
               type="button"
               onClick={handleBreakDecrement}
               disabled={selectedDateHabit.sittingBreaks === 0}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-40"
+              className="flex items-center gap-1 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800/70 disabled:opacity-40"
             >
               <Minus className="w-3.5 h-3.5" />
               <span>- 1</span>
@@ -416,19 +416,19 @@ export const HabitsTracker: React.FC = () => {
       </div>
 
       {/* Daily Habits Checklist */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-sm font-extrabold text-neutral-900">
+            <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
               {t('dailyChecklist')}
             </h3>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
               {isBn
                 ? `সম্পন্ন হয়েছে: ${completedCount} / ${habitsList.length}`
                 : `Completed: ${completedCount} / ${habitsList.length}`}
             </p>
           </div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-700">
+          <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
             {selectedDate}
           </span>
         </div>
@@ -444,8 +444,8 @@ export const HabitsTracker: React.FC = () => {
                 onClick={() => handleToggleHabit(habit.key)}
                 className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                   isChecked
-                    ? 'bg-emerald-50/70 border-emerald-300'
-                    : 'bg-neutral-50/70 border-neutral-200/80 hover:bg-neutral-100/70'
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700/70'
+                    : 'bg-neutral-50/70 dark:bg-neutral-800/60 border-neutral-200/80 dark:border-neutral-800 hover:bg-neutral-100/70'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -453,10 +453,10 @@ export const HabitsTracker: React.FC = () => {
                     <Icon className="w-4 h-4 stroke-[2]" />
                   </div>
                   <div>
-                    <div className={`text-xs font-bold ${isChecked ? 'text-emerald-950 line-through opacity-80' : 'text-neutral-900'}`}>
+                    <div className={`text-xs font-bold ${isChecked ? 'text-emerald-950 dark:text-emerald-200 line-through opacity-80' : 'text-neutral-900 dark:text-neutral-100'}`}>
                       {habit.label}
                     </div>
-                    <div className="text-[11px] text-neutral-500">{habit.desc}</div>
+                    <div className="text-[11px] text-neutral-500 dark:text-neutral-400">{habit.desc}</div>
                   </div>
                 </div>
 
@@ -475,9 +475,9 @@ export const HabitsTracker: React.FC = () => {
 
       {/* 7-Day Hydration Trend */}
       {last7DaysData.length > 0 && (
-        <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
           <div className="mb-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
               {isBn ? 'গত ৭ দিনের পানি পানের চার্ট (গ্লাস)' : '7-Day Hydration Consistency (Glasses)'}
             </h3>
           </div>

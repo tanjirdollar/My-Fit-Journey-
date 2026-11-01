@@ -257,13 +257,13 @@ export const HealthRecords: React.FC = () => {
   return (
     <div className="space-y-5 pb-16">
       {/* Header */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-xl font-black text-neutral-900 tracking-tight font-display">
+            <h2 className="text-xl font-black text-neutral-900 dark:text-neutral-100 tracking-tight font-display">
               {t('healthRecords')}
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {isBn
                 ? 'রক্তচাপ, সুগার, এইচবিএওয়ানসি ও লিপিড প্রোফাইল রিপোর্ট পর্যবেক্ষণ'
                 : 'Blood pressure, glucose, HbA1c, and lipid profile tracking.'}
@@ -281,26 +281,26 @@ export const HealthRecords: React.FC = () => {
         </div>
 
         {/* Clinical Reference Standards Box */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-neutral-50 p-3 rounded-2xl border border-neutral-200/60 text-xs">
-          <div className="p-2 bg-white rounded-xl border border-neutral-200/60">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-neutral-50 dark:bg-neutral-800/70 p-3 rounded-2xl border border-neutral-200/60 dark:border-neutral-800 text-xs">
+          <div className="p-2 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/60 dark:border-neutral-800">
             <div className="text-[10px] font-bold text-neutral-400 uppercase">Blood Pressure</div>
-            <div className="font-extrabold text-neutral-900 mt-0.5">&lt; 120 / 80</div>
-            <div className="text-[9px] text-emerald-700 font-semibold">Optimal mmHg</div>
+            <div className="font-extrabold text-neutral-900 dark:text-neutral-100 mt-0.5">&lt; 120 / 80</div>
+            <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-semibold">Optimal mmHg</div>
           </div>
-          <div className="p-2 bg-white rounded-xl border border-neutral-200/60">
+          <div className="p-2 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/60 dark:border-neutral-800">
             <div className="text-[10px] font-bold text-neutral-400 uppercase">Fasting Glucose</div>
-            <div className="font-extrabold text-neutral-900 mt-0.5">70 - 99</div>
-            <div className="text-[9px] text-emerald-700 font-semibold">Normal mg/dL</div>
+            <div className="font-extrabold text-neutral-900 dark:text-neutral-100 mt-0.5">70 - 99</div>
+            <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-semibold">Normal mg/dL</div>
           </div>
-          <div className="p-2 bg-white rounded-xl border border-neutral-200/60">
+          <div className="p-2 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/60 dark:border-neutral-800">
             <div className="text-[10px] font-bold text-neutral-400 uppercase">HbA1c</div>
-            <div className="font-extrabold text-neutral-900 mt-0.5">&lt; 5.7 %</div>
-            <div className="text-[9px] text-emerald-700 font-semibold">Normal 3-Mo Avg</div>
+            <div className="font-extrabold text-neutral-900 dark:text-neutral-100 mt-0.5">&lt; 5.7 %</div>
+            <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-semibold">Normal 3-Mo Avg</div>
           </div>
-          <div className="p-2 bg-white rounded-xl border border-neutral-200/60">
+          <div className="p-2 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/60 dark:border-neutral-800">
             <div className="text-[10px] font-bold text-neutral-400 uppercase">Triglycerides</div>
-            <div className="font-extrabold text-neutral-900 mt-0.5">&lt; 150</div>
-            <div className="text-[9px] text-emerald-700 font-semibold">Normal mg/dL</div>
+            <div className="font-extrabold text-neutral-900 dark:text-neutral-100 mt-0.5">&lt; 150</div>
+            <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-semibold">Normal mg/dL</div>
           </div>
         </div>
 
@@ -320,7 +320,7 @@ export const HealthRecords: React.FC = () => {
               className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all ${
                 selectedType === tab.id
                   ? 'bg-emerald-700 text-white shadow-2xs'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
               }`}
             >
               {tab.label}
@@ -331,22 +331,22 @@ export const HealthRecords: React.FC = () => {
 
       {/* Feedback & Error Banners */}
       {feedbackMsg && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+        <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 text-emerald-900 dark:text-emerald-200 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{feedbackMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
+        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 text-rose-800 dark:text-rose-300 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 shadow-2xs">
           <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Records History List */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-        <h3 className="text-sm font-extrabold text-neutral-900 mb-3">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+        <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100 mb-3">
           {isBn ? 'ল্যাব টেস্ট ও স্বাস্থ্য রেকর্ডের তালিকা' : 'Clinical Logs & Medical Lab History'}
         </h3>
 
@@ -355,30 +355,30 @@ export const HealthRecords: React.FC = () => {
             {isBn ? 'এই বিভাগে কোনো রেকর্ড পাওয়া যায়নি।' : 'No records logged in this category.'}
           </div>
         ) : (
-          <div className="divide-y divide-neutral-100">
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {filteredRecords.map((r) => (
               <div key={r.id} className="py-3.5 flex items-start justify-between text-xs gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-neutral-900">{r.date}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
+                    <span className="font-extrabold text-neutral-900 dark:text-neutral-100">{r.date}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                       {r.type}
                     </span>
                   </div>
 
                   {/* Specific metrics display */}
-                  <div className="mt-1.5 text-xs text-neutral-700 font-medium">
+                  <div className="mt-1.5 text-xs text-neutral-700 dark:text-neutral-300 font-medium">
                     {r.type === 'bp' && (
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-neutral-900">
+                        <span className="font-black text-neutral-900 dark:text-neutral-100">
                           {r.systolic} / {r.diastolic} mmHg
                         </span>
                         <span className="text-neutral-400">• Pulse: {r.pulse} bpm</span>
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
                             (r.systolic || 0) <= 120 && (r.diastolic || 0) <= 80
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
+                              ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300'
+                              : 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300'
                           }`}
                         >
                           {(r.systolic || 0) <= 120 && (r.diastolic || 0) <= 80 ? 'Normal' : 'Elevated'}
@@ -388,33 +388,33 @@ export const HealthRecords: React.FC = () => {
 
                     {r.type === 'glucose' && (
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span>Fasting: <strong className="text-neutral-900">{r.glucoseFasting} mg/dL</strong></span>
+                        <span>Fasting: <strong className="text-neutral-900 dark:text-neutral-100">{r.glucoseFasting} mg/dL</strong></span>
                         <span className="text-neutral-400">•</span>
-                        <span>Post-Meal: <strong className="text-neutral-900">{r.glucosePostMeal} mg/dL</strong></span>
+                        <span>Post-Meal: <strong className="text-neutral-900 dark:text-neutral-100">{r.glucosePostMeal} mg/dL</strong></span>
                       </div>
                     )}
 
                     {r.type === 'hba1c' && (
                       <div className="flex items-center gap-2">
-                        <span>HbA1c: <strong className="text-neutral-900">{r.hba1c} %</strong></span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">
+                        <span>HbA1c: <strong className="text-neutral-900 dark:text-neutral-100">{r.hba1c} %</strong></span>
+                        <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold">
                           {(r.hba1c || 0) < 5.7 ? 'Normal' : 'Borderline'}
                         </span>
                       </div>
                     )}
 
                     {r.type === 'lipid' && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px] text-neutral-600 mt-1">
-                        <span>Total Chol: <strong className="text-neutral-900">{r.totalCholesterol}</strong></span>
-                        <span>LDL: <strong className="text-neutral-900">{r.ldl}</strong></span>
-                        <span>HDL: <strong className="text-neutral-900">{r.hdl}</strong></span>
-                        <span>Triglycerides: <strong className="text-neutral-900">{r.triglycerides}</strong></span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-[11px] text-neutral-600 dark:text-neutral-400 mt-1">
+                        <span>Total Chol: <strong className="text-neutral-900 dark:text-neutral-100">{r.totalCholesterol}</strong></span>
+                        <span>LDL: <strong className="text-neutral-900 dark:text-neutral-100">{r.ldl}</strong></span>
+                        <span>HDL: <strong className="text-neutral-900 dark:text-neutral-100">{r.hdl}</strong></span>
+                        <span>Triglycerides: <strong className="text-neutral-900 dark:text-neutral-100">{r.triglycerides}</strong></span>
                       </div>
                     )}
                   </div>
 
                   {r.reportNote && (
-                    <div className="mt-1 text-[11px] text-neutral-500 italic flex items-center gap-1">
+                    <div className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400 italic flex items-center gap-1">
                       <FileText className="w-3 h-3 text-neutral-400 shrink-0" />
                       <span>{r.reportNote}</span>
                     </div>
@@ -448,10 +448,10 @@ export const HealthRecords: React.FC = () => {
       {/* Add / Edit Health Record Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-neutral-100 space-y-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-neutral-100 dark:border-neutral-800 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
                   {editingRecord
                     ? isBn
                       ? 'রেকর্ড সম্পাদনা'
@@ -460,7 +460,7 @@ export const HealthRecords: React.FC = () => {
                     ? 'নতুন রেকর্ড'
                     : 'Clinical Entry'}
                 </span>
-                <h3 className="text-base font-extrabold text-neutral-900 mt-1">
+                <h3 className="text-base font-extrabold text-neutral-900 dark:text-neutral-100 mt-1">
                   {editingRecord
                     ? isBn
                       ? 'স্বাস্থ্য রেকর্ড সম্পাদনা করুন'
@@ -471,14 +471,14 @@ export const HealthRecords: React.FC = () => {
               <button
                 type="button"
                 onClick={closeModal}
-                className="w-7 h-7 rounded-full bg-neutral-100 text-neutral-500 flex items-center justify-center font-bold"
+                className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 flex items-center justify-center font-bold"
               >
                 &times;
               </button>
             </div>
 
             {modalError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-2">
+              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 text-rose-800 dark:text-rose-300 rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 <span>{modalError}</span>
               </div>
@@ -487,7 +487,7 @@ export const HealthRecords: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Type selector */}
               <div>
-                <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                   Record Type
                 </label>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -504,7 +504,7 @@ export const HealthRecords: React.FC = () => {
                       className={`py-1.5 rounded-xl text-xs font-bold transition-all ${
                         recordType === m.id
                           ? 'bg-emerald-700 text-white shadow-2xs'
-                          : 'bg-neutral-100 text-neutral-600'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                       }`}
                     >
                       {m.label}
@@ -514,7 +514,7 @@ export const HealthRecords: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                   Date
                 </label>
                 <input
@@ -522,7 +522,7 @@ export const HealthRecords: React.FC = () => {
                   value={date}
                   max={today}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold"
+                  className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-semibold"
                   required
                 />
               </div>
@@ -531,38 +531,41 @@ export const HealthRecords: React.FC = () => {
               {recordType === 'bp' && (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Systolic</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Systolic</label>
                     <input
                       type="number"
+                      step="any"
                       min="40"
                       max="300"
                       value={systolic}
                       onChange={(e) => setSystolic(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Diastolic</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Diastolic</label>
                     <input
                       type="number"
+                      step="any"
                       min="30"
                       max="200"
                       value={diastolic}
                       onChange={(e) => setDiastolic(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Pulse (bpm)</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Pulse (bpm)</label>
                     <input
                       type="number"
+                      step="any"
                       min="30"
                       max="250"
                       value={pulse}
                       onChange={(e) => setPulse(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
@@ -572,26 +575,28 @@ export const HealthRecords: React.FC = () => {
               {recordType === 'glucose' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Fasting (mg/dL)</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Fasting (mg/dL)</label>
                     <input
                       type="number"
+                      step="any"
                       min="1"
                       max="600"
                       value={glucoseFasting}
                       onChange={(e) => setGlucoseFasting(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Post-Meal (mg/dL)</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Post-Meal (mg/dL)</label>
                     <input
                       type="number"
+                      step="any"
                       min="1"
                       max="600"
                       value={glucosePostMeal}
                       onChange={(e) => setGlucosePostMeal(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
@@ -600,15 +605,15 @@ export const HealthRecords: React.FC = () => {
 
               {recordType === 'hba1c' && (
                 <div>
-                  <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">HbA1c (%)</label>
+                  <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">HbA1c (%)</label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="any"
                     min="3"
                     max="20"
                     value={hba1c}
                     onChange={(e) => setHba1c(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                    className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                     required
                   />
                 </div>
@@ -617,46 +622,50 @@ export const HealthRecords: React.FC = () => {
               {recordType === 'lipid' && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Total Chol</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Total Chol</label>
                     <input
                       type="number"
+                      step="any"
                       min="0"
                       value={totalCholesterol}
                       onChange={(e) => setTotalCholesterol(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">LDL</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">LDL</label>
                     <input
                       type="number"
+                      step="any"
                       min="0"
                       value={ldl}
                       onChange={(e) => setLdl(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">HDL</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">HDL</label>
                     <input
                       type="number"
+                      step="any"
                       min="0"
                       value={hdl}
                       onChange={(e) => setHdl(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-neutral-600 mb-0.5">Triglycerides</label>
+                    <label className="block text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 mb-0.5">Triglycerides</label>
                     <input
                       type="number"
+                      step="any"
                       min="0"
                       value={triglycerides}
                       onChange={(e) => setTriglycerides(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold"
+                      className="w-full px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs font-bold"
                       required
                     />
                   </div>
@@ -664,7 +673,7 @@ export const HealthRecords: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                   Doctor Notes / Lab Name
                 </label>
                 <input
@@ -672,7 +681,7 @@ export const HealthRecords: React.FC = () => {
                   value={reportNote}
                   onChange={(e) => setReportNote(e.target.value)}
                   placeholder="e.g. Annual executive checkup, normal fasting glucose"
-                  className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs"
+                  className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs"
                 />
               </div>
 
@@ -680,7 +689,7 @@ export const HealthRecords: React.FC = () => {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="w-1/2 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold hover:bg-neutral-50"
+                  className="w-1/2 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-bold hover:bg-neutral-50 dark:hover:bg-neutral-800/70"
                 >
                   {t('cancel')}
                 </button>

@@ -233,14 +233,14 @@ export const AICoach: React.FC = () => {
       </div>
 
       {/* Medical Safety Disclaimer */}
-      <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3.5 text-xs text-amber-900 leading-relaxed flex items-start gap-2.5">
+      <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3.5 text-xs text-amber-900 dark:text-amber-200 leading-relaxed flex items-start gap-2.5">
         <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
         <span className="text-[11px]">{t('aiDisclaimer')}</span>
       </div>
 
       {/* Quick Prompts Selector */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-        <div className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+        <div className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">
           {t('coachSuggestions')}
         </div>
 
@@ -250,7 +250,7 @@ export const AICoach: React.FC = () => {
               key={idx}
               onClick={() => handleConsultCoach(prompt)}
               disabled={loading}
-              className="p-3 text-left rounded-2xl bg-neutral-50 hover:bg-emerald-50/80 border border-neutral-200/70 hover:border-emerald-300 transition-all text-xs text-neutral-800 font-semibold group flex items-center justify-between"
+              className="p-3 text-left rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 hover:bg-emerald-50/80 border border-neutral-200/70 dark:border-neutral-800 hover:border-emerald-300 transition-all text-xs text-neutral-800 dark:text-neutral-200 font-semibold group flex items-center justify-between"
             >
               <span className="line-clamp-2">{prompt}</span>
               <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-emerald-700 group-hover:translate-x-1 shrink-0 ml-2 transition-transform" />
@@ -260,11 +260,11 @@ export const AICoach: React.FC = () => {
       </div>
 
       {/* Free-form Input Form */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-        <h3 className="text-sm font-extrabold text-neutral-900 mb-2">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+        <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">
           {isBn ? 'আপনার নিজস্ব প্রশ্ন লিখুন' : 'Ask a Specific Health or Routine Question'}
         </h3>
-        <p className="text-xs text-neutral-500 mb-3">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
           {isBn
             ? 'খাবার, হাঁটার সময়, স্কোয়াট বা ডেস্কে বসার বিরতি নিয়ে আপনার যেকোনো দ্বিধা জানান।'
             : 'Ask about meal tweaks, walking timing, squat technique, or sitting breaks.'}
@@ -280,7 +280,7 @@ export const AICoach: React.FC = () => {
                 ? 'যেমন: দুপুরের খাবারে ভাত ও ডালের আদর্শ অনুপাত কত হওয়া উচিত?'
                 : 'e.g. How should I pace my 30 minutes of daily walking around work hours?'
             }
-            className="w-full p-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full p-3.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-2xl text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
           />
 
           <div className="flex items-center justify-between">
@@ -309,7 +309,7 @@ export const AICoach: React.FC = () => {
         </div>
 
         {errorMsg && (
-          <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+          <div className="mt-3 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs text-rose-700 dark:text-rose-400 font-medium">
             {errorMsg}
           </div>
         )}
@@ -317,24 +317,24 @@ export const AICoach: React.FC = () => {
 
       {/* Coach Advice Result Card */}
       {adviceResult && (
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-emerald-500/40 shadow-md animate-fade-in space-y-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border-2 border-emerald-500/40 shadow-md animate-fade-in space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full">
                 {adviceResult.focusArea}
               </span>
-              <h3 className="text-base sm:text-lg font-black text-neutral-900 mt-1.5 font-display">
+              <h3 className="text-base sm:text-lg font-black text-neutral-900 dark:text-neutral-100 mt-1.5 font-display">
                 {isBn ? 'কোচের সুনির্দিষ্ট পরামর্শ' : 'Personalized Coach Recommendation'}
               </h3>
             </div>
 
             <button
               onClick={handleSaveToNotes}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-700/70 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-colors"
             >
               {savedSuccess ? (
                 <>
-                  <BookmarkCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <BookmarkCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                   <span>{isBn ? 'সংরক্ষিত!' : 'Saved to Notes!'}</span>
                 </>
               ) : (
@@ -346,16 +346,16 @@ export const AICoach: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-xs sm:text-sm text-neutral-800 leading-relaxed whitespace-pre-line bg-neutral-50/70 p-4 rounded-2xl border border-neutral-100">
+          <div className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed whitespace-pre-line bg-neutral-50/70 dark:bg-neutral-800/60 p-4 rounded-2xl border border-neutral-100 dark:border-neutral-800">
             {adviceResult.advice}
           </div>
 
           {adviceResult.actionItems && adviceResult.actionItems.length > 0 && (
             <div>
-              <div className="text-xs font-bold text-neutral-900 mb-2">
+              <div className="text-xs font-bold text-neutral-900 dark:text-neutral-100 mb-2">
                 {isBn ? 'আজকের জন্য করণীয় পদক্ষেপসমূহ:' : 'Key Action Steps for Today:'}
               </div>
-              <ul className="space-y-1.5 text-xs text-neutral-700">
+              <ul className="space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300">
                 {adviceResult.actionItems.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
@@ -370,8 +370,8 @@ export const AICoach: React.FC = () => {
 
       {/* Saved Coach Notes History */}
       {aiCoachNotes.length > 0 && (
-        <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
-          <h3 className="text-sm font-extrabold text-neutral-900 mb-3">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+          <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100 mb-3">
             {isBn ? 'পূর্বে সংরক্ষিত কোচের পরামর্শ' : 'Previously Saved Coach Advice'}
           </h3>
 
@@ -379,18 +379,18 @@ export const AICoach: React.FC = () => {
             {aiCoachNotes.map((note) => (
               <div
                 key={note.id}
-                className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/70 text-xs space-y-1.5"
+                className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200/70 dark:border-neutral-800 text-xs space-y-1.5"
               >
                 <div className="flex items-center justify-between text-neutral-400 text-[11px]">
-                  <span className="font-bold text-emerald-800 uppercase tracking-wider">
+                  <span className="font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
                     {note.focusArea}
                   </span>
                   <span>{note.date}</span>
                 </div>
-                <div className="text-neutral-800 leading-relaxed">{note.advice}</div>
+                <div className="text-neutral-800 dark:text-neutral-200 leading-relaxed">{note.advice}</div>
                 {note.actionItems && (
-                  <div className="text-[11px] text-neutral-600 pt-1 border-t border-neutral-200/40">
-                    <strong className="text-neutral-700">Actions:</strong> {note.actionItems}
+                  <div className="text-[11px] text-neutral-600 dark:text-neutral-400 pt-1 border-t border-neutral-200/40">
+                    <strong className="text-neutral-700 dark:text-neutral-300">Actions:</strong> {note.actionItems}
                   </div>
                 )}
               </div>

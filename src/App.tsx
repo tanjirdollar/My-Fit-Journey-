@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { FitnessDataProvider } from './context/FitnessDataContext';
@@ -14,12 +15,13 @@ import { HealthRecords } from './components/HealthRecords';
 import { AICoach } from './components/AICoach';
 import { Reports } from './components/Reports';
 import { GoalsSettings } from './components/GoalsSettings';
+import { OfflineIndicator } from './components/PWAInstallButton';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
 
   return (
-    <div className="min-h-screen bg-neutral-50/80 text-neutral-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-neutral-50/80 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 flex flex-col font-sans transition-colors duration-200">
       {/* Header */}
       <Header onOpenProfile={() => setActiveTab('goals')} />
 
@@ -40,8 +42,11 @@ function AppContent() {
         {activeTab === 'goals' && <GoalsSettings />}
       </main>
 
+      {/* Offline Status Banner */}
+      <OfflineIndicator />
+
       {/* Footer */}
-      <footer className="hidden lg:block border-t border-neutral-200/80 bg-white py-4 text-center text-xs text-neutral-400">
+      <footer className="hidden lg:block border-t border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-4 text-center text-xs text-neutral-400 dark:text-neutral-500 transition-colors">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <span>MyFit Journey • Single-User Health &amp; Waistline Tracker</span>
           <span>Cloud Firestore Isolated Storage • Bengali &amp; English</span>
@@ -53,12 +58,15 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <FitnessDataProvider>
-          <AppContent />
-        </FitnessDataProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <FitnessDataProvider>
+            <AppContent />
+          </FitnessDataProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
+

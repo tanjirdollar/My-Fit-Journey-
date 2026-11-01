@@ -485,15 +485,15 @@ export const NutritionTracker: React.FC = () => {
   return (
     <div className="space-y-6 pb-20">
       {/* Top Header & Date Selector Bar */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-neutral-200/80 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight font-display">
+            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 tracking-tight font-display">
               {isBn
                 ? 'পুষ্টি ট্র্যাকার ও বাংলাদেশী খাদ্য ডাটাবেস'
                 : 'Nutrition Tracker & Bangladeshi Food Database'}
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-500 mt-1">
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
               {isBn
                 ? 'ভাত, মাছ, ডাল, শাক ও দেশি খাবারের সঠিক পরিমাণ (গ্রাম, বাটি, কাপ বা টুকরো) অনুযায়ী ক্যালোরি ও প্রোটিন হিসাব করুন।'
                 : 'Track authentic Bangladeshi meals with editable serving sizes in grams, cups, katoris, or pieces.'}
@@ -537,9 +537,9 @@ export const NutritionTracker: React.FC = () => {
             <button
               type="button"
               onClick={() => handleCopyPreviousDay()}
-              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
             >
-              <Copy className="w-3.5 h-3.5 text-neutral-500" />
+              <Copy className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
               <span>{t('copyYesterday')}</span>
             </button>
 
@@ -555,7 +555,7 @@ export const NutritionTracker: React.FC = () => {
         </div>
 
         {/* 7-Day Date Selector Scroller + Date Picker */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-neutral-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
             {recentDates.map((d) => {
               const isSelected = selectedDate === d.dateStr;
@@ -567,7 +567,7 @@ export const NutritionTracker: React.FC = () => {
                   className={`min-h-[44px] min-w-[54px] px-3 py-1.5 rounded-xl flex flex-col items-center justify-center transition-colors shrink-0 ${
                     isSelected
                       ? 'bg-neutral-900 text-white font-semibold'
-                      : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-600'
+                      : 'bg-neutral-50 dark:bg-neutral-800/70 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                   }`}
                 >
                   <span className="text-[10px] opacity-80">{d.dayLabel}</span>
@@ -585,21 +585,21 @@ export const NutritionTracker: React.FC = () => {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value || today)}
-              className="min-h-[40px] px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium text-neutral-700 tabular-nums focus:outline-hidden focus:border-emerald-600"
+              className="min-h-[40px] px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-300 tabular-nums focus:outline-hidden focus:border-emerald-600"
             />
           </div>
         </div>
 
         {feedbackBanner && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-medium text-emerald-900 flex items-center justify-between">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 rounded-xl text-xs font-medium text-emerald-900 dark:text-emerald-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-700 shrink-0" />
+              <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span>{feedbackBanner}</span>
             </div>
             <button
               type="button"
               onClick={() => setFeedbackBanner(null)}
-              className="text-emerald-700 font-bold px-2"
+              className="text-emerald-700 dark:text-emerald-400 font-bold px-2"
             >
               &times;
             </button>
@@ -612,26 +612,26 @@ export const NutritionTracker: React.FC = () => {
         {/* LEFT COLUMN (7 cols): Daily Macro Summary & Logged Meals by Slot */}
         <div className="lg:col-span-7 space-y-5">
           {/* Daily Calorie & Macronutrient Budget Card */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-neutral-200/80 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-neutral-900">
+              <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
                 {isBn ? 'দৈনিক পুষ্টি ও ক্যালোরি বাজেট' : 'Daily Nutrition & Macro Budget'}
               </h2>
-              <span className="text-xs text-neutral-500 tabular-nums">{selectedDate}</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">{selectedDate}</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
               {/* Calories */}
               <div>
-                <div className="text-xs text-neutral-500">{t('calories')}</div>
-                <div className="text-2xl font-bold text-neutral-900 tabular-nums mt-0.5">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">{t('calories')}</div>
+                <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums mt-0.5">
                   {totalCalories}
                   <span className="text-xs font-normal text-neutral-400">
                     {' '}
                     / {calorieTarget}
                   </span>
                 </div>
-                <div className="w-full bg-neutral-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
                       totalCalories > calorieTarget ? 'bg-amber-500' : 'bg-emerald-600'
@@ -641,7 +641,7 @@ export const NutritionTracker: React.FC = () => {
                     }}
                   />
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-1 tabular-nums">
+                <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 tabular-nums">
                   {totalCalories <= calorieTarget
                     ? `${calorieTarget - totalCalories} kcal ${isBn ? 'বাকি' : 'remaining'}`
                     : `+${totalCalories - calorieTarget} kcal ${isBn ? 'বেশি' : 'over'}`}
@@ -650,15 +650,15 @@ export const NutritionTracker: React.FC = () => {
 
               {/* Protein */}
               <div>
-                <div className="text-xs text-neutral-500">{t('protein')}</div>
-                <div className="text-2xl font-bold text-emerald-700 tabular-nums mt-0.5">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">{t('protein')}</div>
+                <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5">
                   {totalProtein}g
                   <span className="text-xs font-normal text-neutral-400">
                     {' '}
                     / {proteinTarget}g
                   </span>
                 </div>
-                <div className="w-full bg-neutral-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
                     className="h-full bg-emerald-600 rounded-full transition-all"
                     style={{
@@ -666,51 +666,51 @@ export const NutritionTracker: React.FC = () => {
                     }}
                   />
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-1 tabular-nums">
+                <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 tabular-nums">
                   {proteinCalPct}% {isBn ? 'শক্তি' : 'of calories'}
                 </div>
               </div>
 
               {/* Carbohydrates */}
               <div>
-                <div className="text-xs text-neutral-500">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">
                   {isBn ? 'শর্করা (Carbs)' : 'Carbohydrates'}
                 </div>
-                <div className="text-2xl font-bold text-neutral-900 tabular-nums mt-0.5">
+                <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums mt-0.5">
                   {totalCarbs}g
                 </div>
-                <div className="w-full bg-neutral-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
                     className="h-full bg-sky-500 rounded-full transition-all"
                     style={{ width: `${Math.min(100, carbsCalPct)}%` }}
                   />
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-1 tabular-nums">
+                <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 tabular-nums">
                   {carbsCalPct}% {isBn ? 'শক্তি' : 'of calories'}
                 </div>
               </div>
 
               {/* Fat */}
               <div>
-                <div className="text-xs text-neutral-500">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">
                   {isBn ? 'চর্বি (Fat)' : 'Fats & Oils'}
                 </div>
-                <div className="text-2xl font-bold text-neutral-900 tabular-nums mt-0.5">
+                <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums mt-0.5">
                   {totalFat}g
                 </div>
-                <div className="w-full bg-neutral-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
                     className="h-full bg-amber-500 rounded-full transition-all"
                     style={{ width: `${Math.min(100, fatCalPct)}%` }}
                   />
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-1 tabular-nums">
+                <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 tabular-nums">
                   {fatCalPct}% {isBn ? 'শক্তি' : 'of calories'}
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-neutral-100 flex items-center gap-2 text-xs text-neutral-500">
+            <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
               <Info className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
               <span>
                 {isBn
@@ -731,31 +731,31 @@ export const NutritionTracker: React.FC = () => {
               return (
                 <div
                   key={meal}
-                  className={`bg-white rounded-3xl border transition-colors shadow-xs overflow-hidden ${
+                  className={`bg-white dark:bg-neutral-900 rounded-3xl border transition-colors shadow-xs overflow-hidden ${
                     isTargetMeal
                       ? 'border-emerald-500/70'
-                      : 'border-neutral-200/80'
+                      : 'border-neutral-200/80 dark:border-neutral-800'
                   }`}
                 >
                   {/* Meal Header */}
-                  <div className="px-5 py-4 bg-neutral-50/60 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-2">
+                  <div className="px-5 py-4 bg-neutral-50/60 border-b border-neutral-100 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => setSelectedMealType(meal)}
                         className="text-left"
                       >
-                        <h3 className="text-sm font-bold text-neutral-900">
+                        <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
                           {t(meal)}
                         </h3>
-                        <div className="text-xs text-neutral-500 tabular-nums mt-0.5">
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums mt-0.5">
                           <span>{items.length} {isBn ? 'টি পদ' : 'items'}</span>
                           <span aria-hidden="true"> · </span>
-                          <span className="font-semibold text-neutral-800">
+                          <span className="font-semibold text-neutral-800 dark:text-neutral-200">
                             {mealCals} kcal
                           </span>
                           <span aria-hidden="true"> · </span>
-                          <span className="font-semibold text-emerald-700">
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                             {mealProt}g {isBn ? 'প্রোটিন' : 'protein'}
                           </span>
                         </div>
@@ -766,7 +766,7 @@ export const NutritionTracker: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleCopyPreviousDay(meal)}
-                        className="min-h-[40px] px-2.5 py-1.5 rounded-xl text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 flex items-center gap-1 transition-colors whitespace-nowrap"
+                        className="min-h-[40px] px-2.5 py-1.5 rounded-xl text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-1 transition-colors whitespace-nowrap"
                         title={
                           isBn
                             ? `গতকালকের ${t(meal)} কপি করুন`
@@ -797,7 +797,7 @@ export const NutritionTracker: React.FC = () => {
                         className={`min-h-[40px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors whitespace-nowrap ${
                           isTargetMeal
                             ? 'bg-emerald-700 text-white'
-                            : 'bg-neutral-100 hover:bg-emerald-50 text-neutral-700 hover:text-emerald-800'
+                            : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 text-neutral-700 dark:text-neutral-300 hover:text-emerald-800'
                         }`}
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -814,7 +814,7 @@ export const NutritionTracker: React.FC = () => {
                         : `No foods logged for ${t(meal)} yet. Select or search a food from the Bangladeshi database.`}
                     </div>
                   ) : (
-                    <div className="divide-y divide-neutral-100">
+                    <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                       {items.map((item) => {
                         const unitObj = SERVING_UNITS.find(
                           (u) => u.value === item.unit
@@ -832,19 +832,19 @@ export const NutritionTracker: React.FC = () => {
                             className="px-5 py-3.5 min-h-[60px] flex items-center justify-between gap-3 hover:bg-neutral-50/80 transition-colors cursor-pointer group"
                           >
                             <div className="min-w-0 flex-1">
-                              <div className="text-xs sm:text-sm font-semibold text-neutral-900 truncate group-hover:text-emerald-800">
+                              <div className="text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate group-hover:text-emerald-800">
                                 {isBn && item.foodNameBn
                                   ? item.foodNameBn
                                   : item.foodName}
                               </div>
-                              <div className="text-xs text-neutral-500 tabular-nums mt-0.5 flex flex-wrap items-center gap-x-1.5">
-                                <span className="font-medium text-neutral-700">
+                              <div className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums mt-0.5 flex flex-wrap items-center gap-x-1.5">
+                                <span className="font-medium text-neutral-700 dark:text-neutral-300">
                                   {item.portion} {unitDisplay}
                                 </span>
                                 <span aria-hidden="true">·</span>
                                 <span>{item.calories} kcal</span>
                                 <span aria-hidden="true">·</span>
-                                <span className="text-emerald-700 font-medium">
+                                <span className="text-emerald-700 dark:text-emerald-400 font-medium">
                                   {item.protein}g P
                                 </span>
                                 {item.carbs !== undefined && (
@@ -960,15 +960,15 @@ export const NutritionTracker: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-neutral-200/80 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-neutral-900">
+              <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
                 {isBn
                   ? 'বাংলাদেশী খাবারের তালিকা'
                   : 'Bangladeshi Food Database'}
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                 {isBn
                   ? `${filteredFoods.length}টি খাবার পাওয়া গেছে · পরিমাণ এডিট করতে ট্যাপ করুন`
                   : `${filteredFoods.length} foods available · Tap any item to customize serving`}
@@ -977,7 +977,7 @@ export const NutritionTracker: React.FC = () => {
           </div>
 
           {/* Active Meal Slot Selector */}
-          <div className="p-1 bg-neutral-100 rounded-xl grid grid-cols-4 gap-1">
+          <div className="p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl grid grid-cols-4 gap-1">
             {meals.map((m) => (
               <button
                 key={m}
@@ -985,8 +985,8 @@ export const NutritionTracker: React.FC = () => {
                 onClick={() => setSelectedMealType(m)}
                 className={`min-h-[38px] px-2 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors truncate ${
                   selectedMealType === m
-                    ? 'bg-white text-emerald-800 shadow-2xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
+                    ? 'bg-white dark:bg-neutral-900 text-emerald-800 dark:text-emerald-300 shadow-2xs'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
                 }`}
               >
                 {t(m)}
@@ -1007,13 +1007,13 @@ export const NutritionTracker: React.FC = () => {
                   ? 'খাবার খুঁজুন (যেমন: ভাত, রুটি, রুই, ডিম, ডাল, শাক, bhat, mach)...'
                   : 'Search (e.g. bhat, ruti, rui, dim, dal, shak, ભর্তা, doi)...'
               }
-              className="w-full min-h-[44px] pl-10 pr-9 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+              className="w-full min-h-[44px] pl-10 pr-9 py-2.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="min-h-[40px] min-w-[40px] absolute right-1 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 flex items-center justify-center"
+                className="min-h-[40px] min-w-[40px] absolute right-1 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1041,7 +1041,7 @@ export const NutritionTracker: React.FC = () => {
                 className={`min-h-[38px] px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap shrink-0 transition-colors ${
                   selectedCategory === cat.id
                     ? 'bg-neutral-900 text-white'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                 }`}
               >
                 {cat.label}
@@ -1050,10 +1050,10 @@ export const NutritionTracker: React.FC = () => {
           </div>
 
           {/* Food Results Scroll List */}
-          <div className="divide-y divide-neutral-100 max-h-[520px] overflow-y-auto -mx-2 px-2">
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800 max-h-[520px] overflow-y-auto -mx-2 px-2">
             {filteredFoods.length === 0 ? (
               <div className="py-10 text-center space-y-3">
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   {isBn
                     ? `"${searchQuery}" নামের কোনো খাবার পাওয়া যায়নি।`
                     : `No food matching "${searchQuery}" found.`}
@@ -1095,7 +1095,7 @@ export const NutritionTracker: React.FC = () => {
                   <div
                     key={food.id}
                     onClick={() => handleSelectFoodFromDb(food)}
-                    className="py-3 px-2 min-h-[64px] flex items-center justify-between gap-2 hover:bg-neutral-50 rounded-2xl transition-colors cursor-pointer group"
+                    className="py-3 px-2 min-h-[64px] flex items-center justify-between gap-2 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 rounded-2xl transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
@@ -1117,25 +1117,25 @@ export const NutritionTracker: React.FC = () => {
                       </button>
 
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs sm:text-sm font-semibold text-neutral-900 group-hover:text-emerald-800 truncate">
+                        <div className="text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-emerald-800 truncate">
                           {isBn ? food.nameBn : food.name}
                         </div>
-                        <div className="text-xs text-neutral-500 tabular-nums mt-0.5 flex flex-wrap items-center gap-x-1.5">
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums mt-0.5 flex flex-wrap items-center gap-x-1.5">
                           <span>
                             {food.defaultPortion} {unitLabel} (~{defaultCalc.totalGrams}g)
                           </span>
                           <span aria-hidden="true">·</span>
-                          <span className="font-medium text-neutral-800">
+                          <span className="font-medium text-neutral-800 dark:text-neutral-200">
                             {defaultCalc.calories} kcal
                           </span>
                           <span aria-hidden="true">·</span>
-                          <span className="font-medium text-emerald-700">
+                          <span className="font-medium text-emerald-700 dark:text-emerald-400">
                             {defaultCalc.protein}g P
                           </span>
                           {food.waistGuidance === 'ideal' && (
                             <>
                               <span aria-hidden="true">·</span>
-                              <span className="text-emerald-700">
+                              <span className="text-emerald-700 dark:text-emerald-400">
                                 {isBn ? 'কোমর বান্ধব' : 'Waist-friendly'}
                               </span>
                             </>
@@ -1143,7 +1143,7 @@ export const NutritionTracker: React.FC = () => {
                           {food.waistGuidance === 'limit' && (
                             <>
                               <span aria-hidden="true">·</span>
-                              <span className="text-amber-700">
+                              <span className="text-amber-700 dark:text-amber-400">
                                 {isBn ? 'পরিমিত খান' : 'Limit portion'}
                               </span>
                             </>
@@ -1171,7 +1171,7 @@ export const NutritionTracker: React.FC = () => {
                       <button
                         type="button"
                         onClick={(e) => handleQuickAddFood(e, food)}
-                        className="min-h-[44px] min-w-[44px] rounded-xl bg-neutral-100 hover:bg-emerald-700 text-neutral-700 hover:text-white flex items-center justify-center shrink-0 transition-colors"
+                        className="min-h-[44px] min-w-[44px] rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-700 text-neutral-700 dark:text-neutral-300 hover:text-white flex items-center justify-center shrink-0 transition-colors"
                         title={
                           isBn
                             ? `${food.defaultPortion} ${unitLabel} সরাসরি যোগ করুন`
@@ -1230,13 +1230,13 @@ export const NutritionTracker: React.FC = () => {
       ===================================================================== */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl border border-neutral-100 space-y-5">
+          <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl border border-neutral-100 dark:border-neutral-800 space-y-5">
             {/* Modal Top Drag Handle (Mobile) & Header */}
             <div className="w-10 h-1.5 bg-neutral-200 rounded-full mx-auto sm:hidden" />
 
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-xs font-medium text-emerald-700">
+                <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   {editingLogId
                     ? isBn
                       ? 'লগ করা খাবার সম্পাদনা'
@@ -1245,7 +1245,7 @@ export const NutritionTracker: React.FC = () => {
                     ? `${t(selectedMealType)}-এ খাবার যোগ`
                     : `Add to ${t(selectedMealType)}`}
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-neutral-900 mt-0.5">
+                <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
                   {activeFood
                     ? isBn
                       ? activeFood.nameBn
@@ -1257,7 +1257,7 @@ export const NutritionTracker: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="min-h-[44px] min-w-[44px] rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 flex items-center justify-center"
+                className="min-h-[44px] min-w-[44px] rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1268,7 +1268,7 @@ export const NutritionTracker: React.FC = () => {
               {!activeFood && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       {isBn ? 'খাবারের নাম (ইংরেজি/বাংলা) *' : 'Food Name *'}
                     </label>
                     <input
@@ -1281,12 +1281,12 @@ export const NutritionTracker: React.FC = () => {
                           ? 'যেমন: বাসায় রান্না মুরগির ঝোল'
                           : 'e.g. Homemade Chicken Jhol'
                       }
-                      className="w-full min-h-[44px] px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-hidden focus:border-emerald-600"
+                      className="w-full min-h-[44px] px-3.5 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-medium focus:outline-hidden focus:border-emerald-600"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                    <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
                       {isBn ? 'খাবারের ধরন' : 'Category'}
                     </label>
                     <select
@@ -1294,7 +1294,7 @@ export const NutritionTracker: React.FC = () => {
                       onChange={(e) =>
                         setCustomCategory(e.target.value as FoodCategory)
                       }
-                      className="w-full min-h-[44px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-hidden focus:border-emerald-600"
+                      className="w-full min-h-[44px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-medium focus:outline-hidden focus:border-emerald-600"
                     >
                       <option value="staple">
                         {isBn ? 'ভাত ও রুটি' : 'Rice & Roti'}
@@ -1323,14 +1323,14 @@ export const NutritionTracker: React.FC = () => {
               )}
 
               {/* Editable Serving Size & Unit Section */}
-              <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 space-y-3">
+              <div className="p-4 bg-neutral-50 dark:bg-neutral-800/70 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-neutral-800">
+                  <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
                     {isBn
                       ? 'পরিমাণ ও একক নির্বাচন করুন (Serving Size)'
                       : 'Editable Serving Size & Unit'}
                   </label>
-                  <span className="text-xs font-semibold text-emerald-800 tabular-nums">
+                  <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 tabular-nums">
                     {isBn
                       ? `মোট ওজন: ~${currentModalGrams} গ্রাম`
                       : `Total Weight: ~${currentModalGrams}g`}
@@ -1340,7 +1340,7 @@ export const NutritionTracker: React.FC = () => {
                 {/* Quantity Stepper + Unit Dropdown */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   {/* Tactile Stepper + Numeric Input */}
-                  <div className="sm:col-span-5 flex items-center bg-white border border-neutral-200 rounded-xl overflow-hidden">
+                  <div className="sm:col-span-5 flex items-center bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                     <button
                       type="button"
                       onClick={() =>
@@ -1352,7 +1352,7 @@ export const NutritionTracker: React.FC = () => {
                           unit
                         )
                       }
-                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-600 hover:bg-neutral-100 active:bg-neutral-200 transition-colors"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:bg-neutral-200 transition-colors"
                       aria-label="Decrease serving"
                     >
                       <Minus className="w-4 h-4" />
@@ -1369,7 +1369,7 @@ export const NutritionTracker: React.FC = () => {
                           unit
                         )
                       }
-                      className="w-full min-h-[44px] text-center text-sm font-bold text-neutral-900 tabular-nums focus:outline-hidden"
+                      className="w-full min-h-[44px] text-center text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums focus:outline-hidden"
                     />
 
                     <button
@@ -1377,7 +1377,7 @@ export const NutritionTracker: React.FC = () => {
                       onClick={() =>
                         updatePortionAndUnit(portion + stepIncrement, unit)
                       }
-                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-600 hover:bg-neutral-100 active:bg-neutral-200 transition-colors"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:bg-neutral-200 transition-colors"
                       aria-label="Increase serving"
                     >
                       <Plus className="w-4 h-4" />
@@ -1402,7 +1402,7 @@ export const NutritionTracker: React.FC = () => {
                           updatePortionAndUnit(portion, nextUnit);
                         }
                       }}
-                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-neutral-200 rounded-xl text-xs sm:text-sm font-semibold text-neutral-900 focus:outline-hidden focus:border-emerald-600"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 focus:outline-hidden focus:border-emerald-600"
                     >
                       {SERVING_UNITS.map((u) => (
                         <option key={u.value} value={u.value}>
@@ -1415,7 +1415,7 @@ export const NutritionTracker: React.FC = () => {
 
                 {/* Quick Portion Preset Buttons */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  <span className="text-[11px] text-neutral-500 mr-1">
+                  <span className="text-[11px] text-neutral-500 dark:text-neutral-400 mr-1">
                     {isBn ? 'দ্রুত মাপ:' : 'Quick size:'}
                   </span>
                   {portionPresets.map((presetVal) => {
@@ -1428,7 +1428,7 @@ export const NutritionTracker: React.FC = () => {
                         className={`min-h-[36px] px-3 py-1 rounded-lg text-xs font-semibold tabular-nums transition-colors ${
                           isActive
                             ? 'bg-emerald-700 text-white'
-                            : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'
+                            : 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                         }`}
                       >
                         {presetVal}
@@ -1442,7 +1442,7 @@ export const NutritionTracker: React.FC = () => {
               {/* Editable Macronutrients (Calories, Protein, Carbs, Fat) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-neutral-700">
+                  <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
                     {isBn
                       ? 'আনুমানিক পুষ্টিমান (প্রয়োজনে পরিবর্তনযোগ্য)'
                       : 'Nutrition Values (Editable)'}
@@ -1451,7 +1451,7 @@ export const NutritionTracker: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleResetToCalculatedMacros}
-                      className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                      className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>
@@ -1463,69 +1463,70 @@ export const NutritionTracker: React.FC = () => {
 
                 <div className="grid grid-cols-4 gap-2.5">
                   <div>
-                    <label className="block text-[11px] text-neutral-500 font-medium mb-1">
+                    <label className="block text-[11px] text-neutral-500 dark:text-neutral-400 font-medium mb-1">
                       {t('calories')}
                     </label>
                     <input
                       type="number"
+                      step="any"
                       min="0"
                       value={customCalories}
                       onChange={(e) => {
                         setIsManualMacroOverride(true);
                         setCustomCalories(parseInt(e.target.value, 10) || 0);
                       }}
-                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-emerald-700 font-medium mb-1">
+                    <label className="block text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mb-1">
                       {t('protein')} (g)
                     </label>
                     <input
                       type="number"
-                      step="0.5"
+                      step="any"
                       min="0"
                       value={customProtein}
                       onChange={(e) => {
                         setIsManualMacroOverride(true);
                         setCustomProtein(parseFloat(e.target.value) || 0);
                       }}
-                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-emerald-800 tabular-nums"
+                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-300 tabular-nums"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-neutral-500 font-medium mb-1">
+                    <label className="block text-[11px] text-neutral-500 dark:text-neutral-400 font-medium mb-1">
                       Carbs (g)
                     </label>
                     <input
                       type="number"
-                      step="0.5"
+                      step="any"
                       min="0"
                       value={customCarbs}
                       onChange={(e) => {
                         setIsManualMacroOverride(true);
                         setCustomCarbs(parseFloat(e.target.value) || 0);
                       }}
-                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-neutral-500 font-medium mb-1">
+                    <label className="block text-[11px] text-neutral-500 dark:text-neutral-400 font-medium mb-1">
                       Fat (g)
                     </label>
                     <input
                       type="number"
-                      step="0.5"
+                      step="any"
                       min="0"
                       value={customFat}
                       onChange={(e) => {
                         setIsManualMacroOverride(true);
                         setCustomFat(parseFloat(e.target.value) || 0);
                       }}
-                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 tabular-nums"
+                      className="w-full min-h-[42px] px-2.5 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                     />
                   </div>
                 </div>
@@ -1533,7 +1534,7 @@ export const NutritionTracker: React.FC = () => {
 
               {/* Waist & Dietary Guidance Tip for this Bangladeshi Food */}
               {activeFood && (activeFood.tipEn || activeFood.tipBn) && (
-                <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-xs text-emerald-950 leading-relaxed">
+                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/70 text-xs text-emerald-950 dark:text-emerald-200 leading-relaxed">
                   <span className="font-semibold">
                     {isBn ? 'পুষ্টি পরামর্শ: ' : 'Dietary Tip: '}
                   </span>
@@ -1543,7 +1544,7 @@ export const NutritionTracker: React.FC = () => {
 
               {/* Meal Slot Selector */}
               <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5">
                   {isBn ? 'খাবারের বেলা (Meal Slot)' : 'Meal Time'}
                 </label>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -1555,7 +1556,7 @@ export const NutritionTracker: React.FC = () => {
                       className={`min-h-[40px] py-2 rounded-xl text-xs font-semibold capitalize transition-colors ${
                         selectedMealType === m
                           ? 'bg-neutral-900 text-white'
-                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                       }`}
                     >
                       {t(m)}
@@ -1566,7 +1567,7 @@ export const NutritionTracker: React.FC = () => {
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                <label className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1">
                   {isBn ? 'নোট (ঐচ্ছিক)' : 'Optional Notes'}
                 </label>
                 <input
@@ -1578,18 +1579,18 @@ export const NutritionTracker: React.FC = () => {
                       ? 'যেমন: বাসায় কম তেলে রান্না, চিনি ছাড়া'
                       : 'e.g. Home-cooked with minimal oil, no added sugar'
                   }
-                  className="w-full min-h-[42px] px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:border-emerald-600"
+                  className="w-full min-h-[42px] px-3.5 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
 
               {/* Save to Custom Food Database Checkbox (when creating a custom food) */}
               {!activeFood && !editingLogId && (
-                <label className="flex items-center gap-2.5 text-xs text-neutral-700 cursor-pointer pt-1">
+                <label className="flex items-center gap-2.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer pt-1">
                   <input
                     type="checkbox"
                     checked={saveToCustomDb}
                     onChange={(e) => setSaveToCustomDb(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-500"
+                    className="w-4 h-4 rounded text-emerald-700 dark:text-emerald-400 focus:ring-emerald-500"
                   />
                   <span>
                     {isBn
@@ -1604,7 +1605,7 @@ export const NutritionTracker: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 min-h-[48px] py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-semibold hover:bg-neutral-50 transition-colors"
+                  className="w-1/2 min-h-[48px] py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs sm:text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition-colors"
                 >
                   {t('cancel')}
                 </button>

@@ -25,7 +25,7 @@ export const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="h-36 flex items-center justify-center text-xs text-neutral-400 bg-neutral-50 rounded-xl border border-dashed border-neutral-200">
+      <div className="h-36 flex items-center justify-center text-xs text-neutral-400 bg-neutral-50 dark:bg-neutral-800/70 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800">
         No weekly log data available yet.
       </div>
     );

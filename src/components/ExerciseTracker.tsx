@@ -358,13 +358,13 @@ export const ExerciseTracker: React.FC = () => {
   return (
     <div className="space-y-5 pb-16">
       {/* Exercise & Workout Header Card + Date Selector */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-black text-neutral-900 tracking-tight font-display">
+            <h2 className="text-xl font-black text-neutral-900 dark:text-neutral-100 tracking-tight font-display">
               {t('exercise')} &amp; {t('activity')}
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {isBn
                 ? 'ডেস্ক কর্মীদের জন্য নিরাপদ কোর স্ট্রেন্থ, স্কোয়াট, প্ল্যাঙ্ক ও দৈনিক হাঁটা'
                 : 'Targeted core strength, squats, planks, and active walking for sedentary workers.'}
@@ -372,7 +372,7 @@ export const ExerciseTracker: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="bg-emerald-50 text-emerald-800 font-bold px-3 py-1.5 rounded-xl border border-emerald-200/70">
+            <span className="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 font-bold px-3 py-1.5 rounded-xl border border-emerald-200/70 dark:border-emerald-800/70">
               {isBn
                 ? 'সাপ্তাহিক লক্ষ্য: ৩টি সেশন'
                 : 'Weekly Goal: 3 Strength Sessions'}
@@ -381,7 +381,7 @@ export const ExerciseTracker: React.FC = () => {
         </div>
 
         {/* 7-Day Date Selector Scroller + Date Picker */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-neutral-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
             {recentDates.map((d) => {
               const isSelected = selectedDate === d.dateStr;
@@ -393,7 +393,7 @@ export const ExerciseTracker: React.FC = () => {
                   className={`min-h-[44px] min-w-[54px] px-3 py-1.5 rounded-xl flex flex-col items-center justify-center transition-colors shrink-0 ${
                     isSelected
                       ? 'bg-neutral-900 text-white font-semibold'
-                      : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-600'
+                      : 'bg-neutral-50 dark:bg-neutral-800/70 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                   }`}
                 >
                   <span className="text-[10px] opacity-80">{d.dayLabel}</span>
@@ -412,22 +412,22 @@ export const ExerciseTracker: React.FC = () => {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value || today)}
               aria-label="Select exercise date"
-              className="min-h-[40px] px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium text-neutral-700 tabular-nums focus:outline-hidden focus:border-emerald-600"
+              className="min-h-[40px] px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-300 tabular-nums focus:outline-hidden focus:border-emerald-600"
             />
           </div>
         </div>
 
         {/* Feedback Banners */}
         {feedbackMsg && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-900 flex items-center justify-between">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 rounded-xl text-xs font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-700 shrink-0" />
+              <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span>{feedbackMsg}</span>
             </div>
             <button
               type="button"
               onClick={() => setFeedbackMsg(null)}
-              className="text-emerald-700 font-bold px-2"
+              className="text-emerald-700 dark:text-emerald-400 font-bold px-2"
             >
               &times;
             </button>
@@ -435,7 +435,7 @@ export const ExerciseTracker: React.FC = () => {
         )}
 
         {errorMsg && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-800 flex items-center justify-between">
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs font-semibold text-rose-800 dark:text-rose-300 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{errorMsg}</span>
@@ -443,7 +443,7 @@ export const ExerciseTracker: React.FC = () => {
             <button
               type="button"
               onClick={() => setErrorMsg(null)}
-              className="text-rose-700 font-bold px-2"
+              className="text-rose-700 dark:text-rose-400 font-bold px-2"
             >
               &times;
             </button>
@@ -451,7 +451,7 @@ export const ExerciseTracker: React.FC = () => {
         )}
 
         {/* Summary of Selected Date's Movement */}
-        <div className="grid grid-cols-3 gap-3 bg-neutral-50 p-3 rounded-2xl border border-neutral-200/60 text-center">
+        <div className="grid grid-cols-3 gap-3 bg-neutral-50 dark:bg-neutral-800/70 p-3 rounded-2xl border border-neutral-200/60 dark:border-neutral-800 text-center">
           <div>
             <div className="text-[10px] uppercase font-bold text-neutral-400">
               {selectedDate === today
@@ -460,7 +460,7 @@ export const ExerciseTracker: React.FC = () => {
                   : 'Total Exercise'
                 : `${selectedDate} Exercise`}
             </div>
-            <div className="text-lg font-black text-neutral-900 tabular-nums">
+            <div className="text-lg font-black text-neutral-900 dark:text-neutral-100 tabular-nums">
               {totalWorkoutMinutes}
             </div>
             <div className="text-[10px] text-neutral-400 font-medium">
@@ -480,7 +480,7 @@ export const ExerciseTracker: React.FC = () => {
             <div className="text-[10px] uppercase font-bold text-teal-600">
               Daily Steps
             </div>
-            <div className="text-lg font-black text-teal-800 tabular-nums">
+            <div className="text-lg font-black text-teal-800 dark:text-teal-300 tabular-nums">
               {selectedDateActivity.steps}
             </div>
             <div className="text-[10px] text-teal-600 font-medium tabular-nums">
@@ -491,18 +491,18 @@ export const ExerciseTracker: React.FC = () => {
       </div>
 
       {/* Manual Activity & Steps Tracker Section (Scoped to selectedDate) */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div>
             <div className="flex items-center gap-2">
               <Footprints className="w-4 h-4 text-teal-600" />
-              <h3 className="text-sm font-extrabold text-neutral-900">
+              <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
                 {isBn
                   ? `দৈনিক হাঁটা ও স্টেপস লগ (${selectedDate === today ? 'আজ' : selectedDate})`
                   : `Daily Steps & Walking Log (${selectedDate === today ? 'Today' : selectedDate})`}
               </h3>
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               {isBn
                 ? 'আপনার স্মার্টওয়াচ বা পেডোমিটারের কদম সংখ্যা ও হাঁটার সময় এখানে লিখুন।'
                 : 'Enter step count from your pedometer or fitness watch. No background sensor tracking is claimed.'}
@@ -513,31 +513,32 @@ export const ExerciseTracker: React.FC = () => {
         <form onSubmit={handleSaveActivity} className="space-y-3 mt-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+              <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                 {t('steps')}
               </label>
               <input
                 type="number"
                 min="0"
                 max="200000"
-                step="50"
+                step="any"
                 value={manualSteps}
                 onChange={(e) =>
                   handleStepsInputChange(parseInt(e.target.value, 10) || 0)
                 }
                 placeholder="e.g. 5000"
-                className="w-full min-h-[42px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-teal-500/30"
+                className="w-full min-h-[42px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-teal-500/30"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+              <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                 {isBn ? 'হাঁটার সময় (মিনিট)' : 'Walking Duration (mins)'}
               </label>
               <input
                 type="number"
                 min="0"
                 max="720"
+                step="any"
                 value={manualWalkMinutes}
                 onChange={(e) =>
                   setManualWalkMinutes(
@@ -545,17 +546,17 @@ export const ExerciseTracker: React.FC = () => {
                   )
                 }
                 placeholder="e.g. 35"
-                className="w-full min-h-[42px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-teal-500/30"
+                className="w-full min-h-[42px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-teal-500/30"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+              <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                 {isBn ? 'দূরত্ব (কিলোমিটার)' : 'Distance (km)'}
               </label>
               <input
                 type="number"
-                step="0.1"
+                step="any"
                 min="0"
                 max="100"
                 value={manualDistanceKm}
@@ -565,7 +566,7 @@ export const ExerciseTracker: React.FC = () => {
                   )
                 }
                 placeholder="e.g. 3.2"
-                className="w-full min-h-[42px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-teal-500/30"
+                className="w-full min-h-[42px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-teal-500/30"
               />
             </div>
           </div>
@@ -593,14 +594,14 @@ export const ExerciseTracker: React.FC = () => {
       </div>
 
       {/* Curated Exercise Library & Logging Guide */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="mb-4">
-          <h3 className="text-sm font-extrabold text-neutral-900 tracking-tight">
+          <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100 tracking-tight">
             {isBn
               ? 'প্রস্তাবিত ব্যায়ামসমূহ (ব্যায়াম নির্বাচন করুন)'
               : 'Targeted Exercise Library (Click to Log)'}
           </h3>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
             {isBn
               ? 'কোমরের মেদ কমাতে ও বসে কাজ করার জড়তা দূর করতে এই ব্যায়ামগুলো বিশেষভাবে কার্যকর।'
               : 'Specifically recommended for slimming waist circumference and counteracting desk sitting.'}
@@ -612,23 +613,23 @@ export const ExerciseTracker: React.FC = () => {
             <div
               key={ex.id}
               onClick={() => handleOpenAddExerciseModal(ex)}
-              className="p-3.5 rounded-2xl border border-neutral-200/70 hover:border-emerald-500 hover:bg-emerald-50/20 transition-all cursor-pointer group flex flex-col justify-between"
+              className="p-3.5 rounded-2xl border border-neutral-200/70 dark:border-neutral-800 hover:border-emerald-500 hover:bg-emerald-50/20 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="font-black text-xs text-neutral-900 group-hover:text-emerald-800 transition-colors">
+                  <div className="font-black text-xs text-neutral-900 dark:text-neutral-100 group-hover:text-emerald-800 transition-colors">
                     {isBn ? ex.nameBn : ex.nameEn}
                   </div>
-                  <span className="text-[10px] font-bold bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 px-2 py-0.5 rounded-full">
                     {ex.defaultDurationMin} {t('mins')}
                   </span>
                 </div>
 
-                <p className="text-[11px] text-neutral-600 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-neutral-600 dark:text-neutral-400 line-clamp-2 leading-relaxed">
                   {isBn ? ex.descriptionBn : ex.descriptionEn}
                 </p>
 
-                <div className="mt-2 text-[10px] text-emerald-800 font-semibold bg-emerald-50/80 p-2 rounded-xl border border-emerald-100">
+                <div className="mt-2 text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold bg-emerald-50/80 dark:bg-emerald-950/50 p-2 rounded-xl border border-emerald-100 dark:border-emerald-900/60">
                   <span className="font-bold">
                     {isBn ? 'সুবিধা:' : 'Benefit:'}{' '}
                   </span>
@@ -636,7 +637,7 @@ export const ExerciseTracker: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-neutral-100 flex items-center justify-between text-xs font-bold text-emerald-700">
+              <div className="mt-3 pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-400">
                 <span className="text-[10px] text-neutral-400 font-normal">
                   {ex.defaultSets > 1 ? `${ex.defaultSets} sets • ` : ''}
                   {ex.defaultReps > 0
@@ -654,9 +655,9 @@ export const ExerciseTracker: React.FC = () => {
       </div>
 
       {/* Selected Date's Logged Workouts List (with Edit & Delete) */}
-      <div className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-extrabold text-neutral-900">
+          <h3 className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
             {selectedDate === today
               ? isBn
                 ? 'আজকের ব্যায়ামের তালিকা'
@@ -677,7 +678,7 @@ export const ExerciseTracker: React.FC = () => {
               : 'No workouts logged for this date.'}
           </div>
         ) : (
-          <div className="divide-y divide-neutral-100">
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {selectedDateExercises.map((log) => (
               <div
                 key={log.id}
@@ -685,10 +686,10 @@ export const ExerciseTracker: React.FC = () => {
                 className="py-3 flex items-center justify-between gap-3 text-xs hover:bg-neutral-50/80 px-2 -mx-2 rounded-xl cursor-pointer transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold text-neutral-900 truncate">
+                  <div className="font-bold text-neutral-900 dark:text-neutral-100 truncate">
                     {log.name}
                   </div>
-                  <div className="text-[11px] text-neutral-500 tabular-nums mt-0.5">
+                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 tabular-nums mt-0.5">
                     {log.sets > 1 ? `${log.sets} sets · ` : ''}
                     {log.reps > 0 ? `${log.reps} reps · ` : ''}
                     {log.durationMinutes} mins · RPE {log.rpe}/10
@@ -734,17 +735,17 @@ export const ExerciseTracker: React.FC = () => {
       {/* Log / Edit Exercise Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md max-h-[92vh] overflow-y-auto shadow-2xl border border-neutral-100 space-y-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md max-h-[92vh] overflow-y-auto shadow-2xl border border-neutral-100 dark:border-neutral-800 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
                   {editingLog
                     ? isBn
                       ? 'ব্যায়াম সম্পাদনা'
                       : 'Edit Exercise Log'
                     : exerciseCategory}
                 </span>
-                <h3 className="text-base font-extrabold text-neutral-900 mt-1">
+                <h3 className="text-base font-extrabold text-neutral-900 dark:text-neutral-100 mt-1">
                   {editingLog
                     ? isBn
                       ? 'ব্যায়ামের তথ্য পরিবর্তন করুন'
@@ -759,14 +760,14 @@ export const ExerciseTracker: React.FC = () => {
                   setEditingLog(null);
                   setModalError(null);
                 }}
-                className="min-h-[40px] min-w-[40px] rounded-full bg-neutral-100 text-neutral-500 flex items-center justify-center font-bold"
+                className="min-h-[40px] min-w-[40px] rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 flex items-center justify-center font-bold"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-medium text-rose-700 flex items-center gap-2">
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 rounded-xl text-xs font-medium text-rose-700 dark:text-rose-400 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{modalError}</span>
               </div>
@@ -776,7 +777,7 @@ export const ExerciseTracker: React.FC = () => {
               {/* Exercise Name & Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     {isBn ? 'ব্যায়ামের নাম *' : 'Exercise Name *'}
                   </label>
                   <input
@@ -784,11 +785,11 @@ export const ExerciseTracker: React.FC = () => {
                     required
                     value={exerciseName}
                     onChange={(e) => setExerciseName(e.target.value)}
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     {isBn ? 'তারিখ *' : 'Date *'}
                   </label>
                   <input
@@ -796,7 +797,7 @@ export const ExerciseTracker: React.FC = () => {
                     required
                     value={logDate}
                     onChange={(e) => setLogDate(e.target.value)}
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
               </div>
@@ -804,45 +805,48 @@ export const ExerciseTracker: React.FC = () => {
               {/* Sets, Reps & Duration */}
               <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     {t('sets')}
                   </label>
                   <input
                     type="number"
                     min="0"
                     max="100"
+                    step="any"
                     value={sets}
                     onChange={(e) =>
                       setSets(Math.max(0, parseInt(e.target.value, 10) || 0))
                     }
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     {t('reps')} / Secs
                   </label>
                   <input
                     type="number"
                     min="0"
                     max="1000"
+                    step="any"
                     value={reps}
                     onChange={(e) =>
                       setReps(Math.max(0, parseInt(e.target.value, 10) || 0))
                     }
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     {t('duration')} *
                   </label>
                   <input
                     type="number"
                     min="1"
                     max="600"
+                    step="any"
                     required
                     value={durationMinutes}
                     onChange={(e) =>
@@ -850,7 +854,7 @@ export const ExerciseTracker: React.FC = () => {
                         Math.max(1, parseInt(e.target.value, 10) || 1)
                       )
                     }
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-900 tabular-nums"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
                   />
                 </div>
               </div>
@@ -858,10 +862,10 @@ export const ExerciseTracker: React.FC = () => {
               {/* Perceived Effort (RPE) Slider & Level */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-neutral-600">
+                  <label className="text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
                     {t('rpeLabel')}
                   </label>
-                  <span className="text-xs font-extrabold text-emerald-800 tabular-nums">
+                  <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 tabular-nums">
                     RPE {rpe} / 10
                   </span>
                 </div>
@@ -873,7 +877,7 @@ export const ExerciseTracker: React.FC = () => {
                   onChange={(e) => handleRpeChange(parseInt(e.target.value, 10))}
                   className="w-full accent-emerald-600"
                 />
-                <div className="text-[10px] text-neutral-500 mt-1 font-medium">
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
                   {getRpeDescription(rpe)}
                 </div>
               </div>
@@ -881,13 +885,14 @@ export const ExerciseTracker: React.FC = () => {
               {/* Editable Estimated Calories Burned & Notes */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     {isBn ? 'বার্ন ক্যালোরি (kcal)' : 'Calories Burned'}
                   </label>
                   <input
                     type="number"
                     min="0"
                     max="5000"
+                    step="any"
                     value={caloriesBurnedInput}
                     onChange={(e) => {
                       setIsManualCalories(true);
@@ -895,12 +900,12 @@ export const ExerciseTracker: React.FC = () => {
                         Math.max(0, parseInt(e.target.value, 10) || 0)
                       );
                     }}
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-orange-600 tabular-nums"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold text-orange-600 tabular-nums"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">
+                  <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                     Workout Notes
                   </label>
                   <input
@@ -908,7 +913,7 @@ export const ExerciseTracker: React.FC = () => {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g. good form, felt strong in last set"
-                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs"
+                    className="w-full min-h-[40px] px-3 py-2 bg-neutral-50 dark:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs"
                   />
                 </div>
               </div>
@@ -922,7 +927,7 @@ export const ExerciseTracker: React.FC = () => {
                     setEditingLog(null);
                     setModalError(null);
                   }}
-                  className="w-1/2 min-h-[44px] py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold"
+                  className="w-1/2 min-h-[44px] py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-bold"
                 >
                   {t('cancel')}
                 </button>
