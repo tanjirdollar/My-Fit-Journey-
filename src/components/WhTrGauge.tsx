@@ -16,18 +16,24 @@ export const WhTrGauge: React.FC<WhTrGaugeProps> = ({ waistCm, heightCm, targetW
   const idealMaxRatio = 0.500; // < 0.50 is the international gold standard for healthy waistline
 
   // Status determination
-  let statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
+  let statusColor =
+    'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/70';
   let statusText = isBn ? 'সতর্কতা: পেটের অভ্যন্তরীণ মেদ বেশি' : 'Caution: Elevated Visceral Adiposity';
-  let badgeColor = 'bg-amber-100 text-amber-800';
+  let badgeColor =
+    'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200';
 
   if (ratio < 0.500) {
-    statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    statusColor =
+      'text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/70';
     statusText = isBn ? 'আদর্শ ও স্বাস্থ্যকর পরিসীমা' : 'Optimal & Healthy Ratio';
-    badgeColor = 'bg-emerald-100 text-emerald-800';
+    badgeColor =
+      'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200';
   } else if (ratio >= 0.600) {
-    statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
+    statusColor =
+      'text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/70';
     statusText = isBn ? 'উচ্চ স্বাস্থ্য ঝুঁকি' : 'High Cardiometabolic Risk';
-    badgeColor = 'bg-rose-100 text-rose-800';
+    badgeColor =
+      'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200';
   }
 
   // Calculate percentage along scale from 0.40 to 0.65
@@ -67,35 +73,21 @@ export const WhTrGauge: React.FC<WhTrGaugeProps> = ({ waistCm, heightCm, targetW
           <div className="h-full bg-rose-400 flex-1" title="High Risk: >= 0.60" />
         </div>
 
-        {/* Pointer indicator for current ratio */}
-        <div className="relative w-full h-6 mt-1">
-          <div
-            className="absolute -top-1 -translate-x-1/2 flex flex-col items-center transition-all duration-300"
-            style={{ left: `${currentPct}%` }}
-          >
-            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-neutral-900" />
-            <span className="text-[10px] font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap bg-neutral-100 dark:bg-neutral-800 px-1 rounded">
-              {isBn ? 'বর্তমান' : 'Current'} {ratio}
-            </span>
-          </div>
-
-          {/* Target marker */}
-          <div
-            className="absolute -top-1 -translate-x-1/2 flex flex-col items-center opacity-80"
-            style={{ left: `${targetPct}%` }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-700" />
-            <span className="text-[9px] font-medium text-emerald-800 dark:text-emerald-300 whitespace-nowrap">
-              {isBn ? 'লক্ষ্য' : 'Target'} {targetWaistCm}cm
-            </span>
-          </div>
+        {/* Pointer indicator for current ratio & target marker */}
+        <div className="flex items-center justify-between text-[11px] mt-2 px-0.5">
+          <span className="font-medium text-emerald-700 dark:text-emerald-400">
+            {isBn ? 'লক্ষ্য:' : 'Target:'} {targetWaistCm} cm ({targetRatio})
+          </span>
+          <span className="font-bold text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md">
+            {isBn ? 'বর্তমান:' : 'Current:'} {ratio}
+          </span>
         </div>
       </div>
 
       {/* Status interpretation box */}
       <div className={`mt-3 p-3 rounded-xl border text-xs leading-relaxed ${statusColor}`}>
         <div className="font-semibold">{statusText}</div>
-        <p className="mt-0.5 text-neutral-600 dark:text-neutral-400">
+        <p className="mt-0.5 text-neutral-600 dark:text-neutral-300">
           {isBn
             ? `কোমর ${waistCm} সেমি থেকে কমিয়ে প্রথমে ${targetWaistCm} সেমি এবং পরবর্তীতে ৮২.৫ সেমির নিচে আনলে স্বাস্থ্যকর অনুপাত (<০.৫০) অর্জিত হবে।`
             : `Gradually trimming waist from ${waistCm} cm toward ${targetWaistCm} cm and eventually below 82.5 cm achieves the ideal healthy ratio (< 0.50) without drastic weight loss.`}
