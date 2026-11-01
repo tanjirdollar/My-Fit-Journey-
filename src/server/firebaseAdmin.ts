@@ -1,21 +1,42 @@
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth, DecodedIdToken } from 'firebase-admin/auth';
+import { createRequire } from 'module';
+import type { App } from 'firebase-admin/app';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import crypto from 'crypto';
-import firebaseAppletConfig from '../../firebase-applet-config.json';
+import fs from 'fs';
+import path from 'path';
+
+const require = createRequire(import.meta.url);
+if (typeof (globalThis as any).require === 'undefined') {
+  (globalThis as any).require = require;
+}
+
+function loadFirebaseAdminSdk(): {
+  getApps: typeof import('firebase-admin/app').getApps;
+  initializeApp: typeof import('firebase-admin/app').initializeApp;
+  getAuth: typeof import('firebase-admin/auth').getAuth;
+} {
+  const appModule = require('firebase-admin/app');
+  const authModule = require('firebase-admin/auth');
+  return {
+    getApps: appModule.getApps,
+    initializeApp: appModule.initializeApp,
+    getAuth: authModule.getAuth,
+  };
+}
 
 // ============================================================================
 // Safe Server-Side Diagnostic Logger & Correlation ID Generator
 // ============================================================================
 
 export type FoodRecognitionStage =
-  | 'CLIENT_HEADER_CHECK'
+  | 'REQUEST_RECEIVED'
+  | 'FIREBASE_ADMIN_INITIALIZATION'
   | 'AUTH_TOKEN_VERIFICATION'
   | 'RATE_LIMIT_CHECK'
   | 'IMAGE_PAYLOAD_VALIDATION'
-  | 'GEMINI_API_CONFIG'
-  | 'GEMINI_VISION_REQUEST'
-  | 'AI_RESPONSE_PARSING'
-  | 'REQUEST_COMPLETED';
+  | 'GEMINI_API_REQUEST'
+  | 'GEMINI_RESPONSE_PARSING'
+  | 'RESPONSE_SENT';
 
 export type FoodRecognitionErrorCategory =
   | 'NONE'
@@ -52,11 +73,17 @@ export function sanitizeDiagnosticMessage(raw: string): string {
   return raw
     // Redact Bearer tokens / JWTs
     .replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, 'Bearer [REDACTED_TOKEN]')
-    .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, '[REDACTED_JWT]')
+    .replace(
+      /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
+      '[REDACTED_JWT]'
+    )
     // Redact Google API keys
     .replace(/AIza[0-9A-Za-z_-]{25,}/g, '[REDACTED_API_KEY]')
     // Redact email addresses
-    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[REDACTED_EMAIL]')
+    .replace(
+      /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g,
+      '[REDACTED_EMAIL]'
+    )
     // Redact accidental long base64 sequences (>120 chars)
     .replace(/[A-Za-z0-9+/]{120,}={0,2}/g, '[REDACTED_BASE64]')
     .slice(0, 500);
@@ -75,9 +102,15 @@ export function logFoodRecognitionDiagnostic(entry: DiagnosticLogEntry): void {
   };
 
   if (entry.statusCode >= 400) {
-    console.error('[AI_FOOD_RECOGNITION_DIAGNOSTIC]', JSON.stringify(safePayload));
+    console.error(
+      '[AI_FOOD_RECOGNITION_DIAGNOSTIC]',
+      JSON.stringify(safePayload)
+    );
   } else {
-    console.info('[AI_FOOD_RECOGNITION_DIAGNOSTIC]', JSON.stringify(safePayload));
+    console.info(
+      '[AI_FOOD_RECOGNITION_DIAGNOSTIC]',
+      JSON.stringify(safePayload)
+    );
   }
 }
 
@@ -85,50 +118,93 @@ export function logFoodRecognitionDiagnostic(entry: DiagnosticLogEntry): void {
 // Firebase Project Configuration & Admin Initialization
 // ============================================================================
 
+const DEFAULT_FIREBASE_PROJECT_ID = 'plexiform-collector-mxjsq';
+let cachedProjectId: string | null = null;
+
+/**
+ * Resolves the Firebase Project ID without using a top-level ESM JSON import
+ * (which causes ERR_IMPORT_ATTRIBUTE_MISSING in Node.js ESM / Vercel Serverless).
+ */
 export function getFirebaseProjectId(): string {
   const envProjectId =
     process.env.FIREBASE_PROJECT_ID?.trim() ||
-    process.env.VITE_FIREBASE_PROJECT_ID?.trim();
+    process.env.VITE_FIREBASE_PROJECT_ID?.trim() ||
+    process.env.GCLOUD_PROJECT?.trim() ||
+    process.env.GOOGLE_CLOUD_PROJECT?.trim();
+
   if (envProjectId) {
     return envProjectId;
   }
-  if (
-    firebaseAppletConfig &&
-    typeof firebaseAppletConfig.projectId === 'string' &&
-    firebaseAppletConfig.projectId.trim()
-  ) {
-    return firebaseAppletConfig.projectId.trim();
-  }
-  throw new Error('Firebase projectId is missing in firebase-applet-config.json and environment variables.');
-}
 
-export function ensureFirebaseAdminApp() {
-  const existingApps = getApps();
-  if (existingApps.length > 0) {
-    return existingApps[0];
+  if (cachedProjectId) {
+    return cachedProjectId;
   }
-  const projectId = getFirebaseProjectId();
-  return initializeApp({ projectId });
+
+  try {
+    const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+      const rawJson = fs.readFileSync(configPath, 'utf8');
+      const parsed = JSON.parse(rawJson) as { projectId?: unknown };
+      if (typeof parsed.projectId === 'string' && parsed.projectId.trim()) {
+        cachedProjectId = parsed.projectId.trim();
+        return cachedProjectId;
+      }
+    }
+  } catch {
+    // Fall back to canonical project ID if config file is unavailable in serverless bundle
+  }
+
+  cachedProjectId = DEFAULT_FIREBASE_PROJECT_ID;
+  return cachedProjectId;
 }
 
 export class AuthVerificationError extends Error {
   statusCode: number;
   code: string;
-  category: FoodRecognitionErrorCategory = 'AUTHENTICATION_FAILURE';
-  stage: FoodRecognitionStage = 'AUTH_TOKEN_VERIFICATION';
+  category: FoodRecognitionErrorCategory;
+  stage: FoodRecognitionStage;
   messageBn: string;
 
   constructor(
     message: string,
     statusCode = 401,
     code = 'UNAUTHENTICATED',
-    messageBn = 'আপনার লগইন সেশন যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় গুগল দিয়ে লগইন করে চেষ্টা করুন।'
+    messageBn = 'আপনার লগইন সেশন যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় গুগল দিয়ে লগইন করে চেষ্টা করুন।',
+    stage: FoodRecognitionStage = 'AUTH_TOKEN_VERIFICATION',
+    category: FoodRecognitionErrorCategory = 'AUTHENTICATION_FAILURE'
   ) {
     super(message);
     this.name = 'AuthVerificationError';
     this.statusCode = statusCode;
     this.code = code;
     this.messageBn = messageBn;
+    this.stage = stage;
+    this.category = category;
+  }
+}
+
+export function ensureFirebaseAdminApp(): App {
+  try {
+    const { getApps, initializeApp } = loadFirebaseAdminSdk();
+    const existingApps = getApps();
+    if (existingApps.length > 0) {
+      return existingApps[0];
+    }
+    const projectId = getFirebaseProjectId();
+    return initializeApp({ projectId });
+  } catch (err) {
+    const rawMsg =
+      err instanceof Error
+        ? err.message
+        : 'Failed to initialize Firebase Admin SDK.';
+    throw new AuthVerificationError(
+      `Firebase Admin initialization failed: ${sanitizeDiagnosticMessage(rawMsg)}`,
+      500,
+      'FIREBASE_ADMIN_INIT_ERROR',
+      'সার্ভারে ফায়ারবেস অথেনটিকেশন মডিউল চালু করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।',
+      'FIREBASE_ADMIN_INITIALIZATION',
+      'AUTHENTICATION_FAILURE'
+    );
   }
 }
 
@@ -137,146 +213,22 @@ export interface VerifiedFirebaseUser {
   email?: string;
 }
 
-// Cache Google SecureToken public certificates in memory with TTL
-let cachedCerts: Record<string, string> | null = null;
-let cachedCertsExpiresAt = 0;
-
-async function getGooglePublicCerts(): Promise<Record<string, string>> {
-  const now = Date.now();
-  if (cachedCerts && now < cachedCertsExpiresAt) {
-    return cachedCerts;
-  }
-  const res = await fetch(
-    'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com'
-  );
-  if (!res.ok) {
-    throw new Error(`Failed to fetch Google public certificates (HTTP ${res.status})`);
-  }
-  const cacheControl = res.headers.get('cache-control') || '';
-  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
-  const maxAgeSec = maxAgeMatch ? parseInt(maxAgeMatch[1], 10) : 3600;
-  cachedCerts = (await res.json()) as Record<string, string>;
-  cachedCertsExpiresAt = now + maxAgeSec * 1000;
-  return cachedCerts;
-}
-
-/**
- * Direct RS256 cryptographic fallback verifier using Google's official x509 certs.
- * Used if Firebase Admin SDK fails due to missing GCP metadata/ADC in external serverless runtimes.
- */
-async function verifyFirebaseJwtWithGoogleCerts(
-  idToken: string,
-  expectedProjectId: string
-): Promise<VerifiedFirebaseUser> {
-  const parts = idToken.split('.');
-  if (parts.length !== 3) {
-    throw new AuthVerificationError(
-      'Malformed JWT structure in Firebase ID token.',
-      401,
-      'MALFORMED_TOKEN',
-      'অবৈধ অথেনটিকেশন টোকেন। অনুগ্রহ করে পুনরায় লগইন করুন।'
-    );
-  }
-
-  const headerJson = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
-  const payloadJson = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-
-  if (headerJson.alg !== 'RS256' || typeof headerJson.kid !== 'string') {
-    throw new AuthVerificationError(
-      'Invalid JWT algorithm or missing key ID.',
-      401,
-      'INVALID_ID_TOKEN',
-      'লগইন টোকেনটি বৈধ নয়। অনুগ্রহ করে পুনরায় সাইন-ইন করুন।'
-    );
-  }
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const clockToleranceSec = 300; // 5 minutes tolerance for minor clock skew
-
-  if (typeof payloadJson.exp !== 'number' || payloadJson.exp + clockToleranceSec < nowSec) {
-    throw new AuthVerificationError(
-      'Firebase ID token has expired. Please refresh your session or sign in again.',
-      401,
-      'TOKEN_EXPIRED',
-      'আপনার লগইন সেশনের মেয়াদ শেষ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন বা পুনরায় লগইন করুন।'
-    );
-  }
-
-  if (typeof payloadJson.iat !== 'number' || payloadJson.iat - clockToleranceSec > nowSec) {
-    throw new AuthVerificationError(
-      'Firebase ID token issue time is invalid.',
-      401,
-      'INVALID_ID_TOKEN',
-      'লগইন টোকেনের সময়কাল অসামঞ্জস্যপূর্ণ। অনুগ্রহ করে পুনরায় লগইন করুন।'
-    );
-  }
-
-  const expectedIssuer = `https://securetoken.google.com/${expectedProjectId}`;
-  if (payloadJson.aud !== expectedProjectId || payloadJson.iss !== expectedIssuer) {
-    throw new AuthVerificationError(
-      `Firebase project mismatch: token aud="${String(payloadJson.aud)}" does not match server projectId="${expectedProjectId}".`,
-      401,
-      'PROJECT_ID_MISMATCH',
-      'ফায়ারবেস প্রজেক্ট কনফিগারেশন মেলেনি। অনুগ্রহ করে সঠিক অ্যাকাউন্ট দিয়ে লগইন করুন।'
-    );
-  }
-
-  const sub = typeof payloadJson.sub === 'string' ? payloadJson.sub.trim() : '';
-  if (!sub || sub.length > 128) {
-    throw new AuthVerificationError(
-      'Firebase ID token is missing a valid subject (uid) claim.',
-      401,
-      'MISSING_UID',
-      'ব্যবহারকারীর আইডি যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।'
-    );
-  }
-
-  const certs = await getGooglePublicCerts();
-  const cert = certs[headerJson.kid];
-  if (!cert) {
-    throw new AuthVerificationError(
-      'Firebase ID token key ID (kid) does not match any active Google public key.',
-      401,
-      'INVALID_ID_TOKEN',
-      'আপনার লগইন টোকেনটি পুরনো বা অকার্যকর। অনুগ্রহ করে পুনরায় লগইন করুন।'
-    );
-  }
-
-  const verifier = crypto.createVerify('RSA-SHA256');
-  verifier.update(`${parts[0]}.${parts[1]}`);
-  verifier.end();
-
-  const signatureBuffer = Buffer.from(parts[2], 'base64url');
-  const isSignatureValid = verifier.verify(cert, signatureBuffer);
-  if (!isSignatureValid) {
-    throw new AuthVerificationError(
-      'Firebase ID token cryptographic signature verification failed.',
-      401,
-      'INVALID_ID_TOKEN',
-      'লগইন টোকেনের নিরাপত্তা স্বাক্ষর যাচাই ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় লগইন করুন।'
-    );
-  }
-
-  return {
-    uid: sub,
-    email: typeof payloadJson.email === 'string' ? payloadJson.email : undefined,
-  };
-}
-
 /**
  * Verifies a Firebase ID token from the Authorization: Bearer <token> header
- * using Firebase Admin SDK (with cryptographic Google x509 fallback).
+ * strictly using the authoritative Firebase Admin SDK verifyIdToken().
  * Rejects unauthenticated or invalid requests and never trusts any userId in the body.
  */
 export async function verifyFirebaseIdToken(
-  authorizationHeader: string | undefined
+  authorizationHeader: string | undefined,
+  correlationId?: string
 ): Promise<VerifiedFirebaseUser> {
   if (!authorizationHeader || typeof authorizationHeader !== 'string') {
     throw new AuthVerificationError(
       'Missing Authorization header. Please sign in with Google to use AI Food Recognition.',
       401,
       'MISSING_AUTH_HEADER',
-      'এআই ফুড রিকগনিশন ব্যবহার করতে গুগল অ্যাকাউন্ট দিয়ে লগইন করা প্রয়োজন।'
+      'এআই ফুড রিকগনিশন ব্যবহার করতে গুগল অ্যাকাউন্ট দিয়ে লগইন করা প্রয়োজন।',
+      'AUTH_TOKEN_VERIFICATION'
     );
   }
 
@@ -286,7 +238,8 @@ export async function verifyFirebaseIdToken(
       'Invalid Authorization header format. Expected Bearer <Firebase_ID_Token>.',
       401,
       'INVALID_AUTH_FORMAT',
-      'অথেনটিকেশন হেডার সঠিক নয়। অনুগ্রহ করে পুনরায় লগইন করুন।'
+      'অথেনটিকেশন হেডার সঠিক নয়। অনুগ্রহ করে পুনরায় লগইন করুন।',
+      'AUTH_TOKEN_VERIFICATION'
     );
   }
 
@@ -296,13 +249,28 @@ export async function verifyFirebaseIdToken(
       'Empty or malformed Firebase ID token.',
       401,
       'MALFORMED_TOKEN',
-      'লগইন টোকেনটি অসম্পূর্ণ বা ত্রুটিপূর্ণ। অনুগ্রহ করে পুনরায় গুগল দিয়ে লগইন করুন।'
+      'লগইন টোকেনটি অসম্পূর্ণ বা ত্রুটিপূর্ণ। অনুগ্রহ করে পুনরায় গুগল দিয়ে লগইন করুন।',
+      'AUTH_TOKEN_VERIFICATION'
     );
   }
 
+  // Stage: FIREBASE_ADMIN_INITIALIZATION
+  const app = ensureFirebaseAdminApp();
+  const { getAuth } = loadFirebaseAdminSdk();
   const expectedProjectId = getFirebaseProjectId();
 
-  // Pre-check JWT payload for project mismatch or expiration before Admin SDK call
+  if (correlationId) {
+    logFoodRecognitionDiagnostic({
+      correlationId,
+      stage: 'FIREBASE_ADMIN_INITIALIZATION',
+      statusCode: 200,
+      category: 'NONE',
+      code: 'FIREBASE_ADMIN_READY',
+      message: `Firebase Admin initialized for project ${expectedProjectId}.`,
+    });
+  }
+
+  // Pre-check JWT payload for project mismatch before Admin SDK call
   try {
     const payloadPart = idToken.split('.')[1];
     const decodedPayload = JSON.parse(
@@ -317,7 +285,8 @@ export async function verifyFirebaseIdToken(
         `Firebase project ID mismatch: token was issued for "${decodedPayload.aud}", but server is configured for "${expectedProjectId}".`,
         401,
         'PROJECT_ID_MISMATCH',
-        'ফায়ারবেস প্রজেক্ট আইডি মেলেনি। অনুগ্রহ করে পেজটি রিফ্রেশ করে পুনরায় লগইন করুন।'
+        'ফায়ারবেস প্রজেক্ট আইডি মেলেনি। অনুগ্রহ করে পেজটি রিফ্রেশ করে পুনরায় লগইন করুন।',
+        'AUTH_TOKEN_VERIFICATION'
       );
     }
   } catch (preErr) {
@@ -328,19 +297,21 @@ export async function verifyFirebaseIdToken(
       'Malformed Firebase ID token payload.',
       401,
       'MALFORMED_TOKEN',
-      'লগইন টোকেনটি পড়া যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।'
+      'লগইন টোকেনটি পড়া যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।',
+      'AUTH_TOKEN_VERIFICATION'
     );
   }
 
+  // Stage: AUTH_TOKEN_VERIFICATION (Authoritative Firebase Admin verifyIdToken only)
   try {
-    const app = ensureFirebaseAdminApp();
     const decoded: DecodedIdToken = await getAuth(app).verifyIdToken(idToken);
     if (!decoded || !decoded.uid) {
       throw new AuthVerificationError(
         'Token verification succeeded but no valid Firebase UID was found.',
         401,
         'MISSING_UID',
-        'ব্যবহারকারীর পরিচয় নিশ্চিত করা যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।'
+        'ব্যবহারকারীর পরিচয় নিশ্চিত করা যায়নি। অনুগ্রহ করে পুনরায় লগইন করুন।',
+        'AUTH_TOKEN_VERIFICATION'
       );
     }
     return {
@@ -360,25 +331,17 @@ export async function verifyFirebaseIdToken(
         'Your sign-in session token has expired. Please try again or sign in with Google again.',
         401,
         'TOKEN_EXPIRED',
-        'আপনার লগইন সেশনের মেয়াদ শেষ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন বা পুনরায় লগইন করুন।'
+        'আপনার লগইন সেশনের মেয়াদ শেষ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন বা পুনরায় লগইন করুন।',
+        'AUTH_TOKEN_VERIFICATION'
       );
-    }
-
-    // If Firebase Admin fails due to environment/ADC metadata lookup issues, fall back to direct Google x509 verification
-    if (
-      errCode === 'auth/internal-error' ||
-      errMsg.includes('metadata') ||
-      errMsg.includes('credential') ||
-      errMsg.includes('ENOTFOUND')
-    ) {
-      return await verifyFirebaseJwtWithGoogleCerts(idToken, expectedProjectId);
     }
 
     throw new AuthVerificationError(
       `Authentication failed: ${sanitizeDiagnosticMessage(errMsg)}`,
       401,
       'INVALID_ID_TOKEN',
-      'আপনার লগইন যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় গুগল অ্যাকাউন্ট দিয়ে লগইন করুন।'
+      'আপনার লগইন যাচাই করা যায়নি। অনুগ্রহ করে পুনরায় গুগল অ্যাকাউন্ট দিয়ে লগইন করুন।',
+      'AUTH_TOKEN_VERIFICATION'
     );
   }
 }
@@ -402,7 +365,9 @@ export function checkUserRateLimit(
 ): RateLimitResult {
   const now = Date.now();
   const cutoff = now - windowMs;
-  const previous = (userRequestBuckets.get(uid) || []).filter((ts) => ts > cutoff);
+  const previous = (userRequestBuckets.get(uid) || []).filter(
+    (ts) => ts > cutoff
+  );
 
   if (previous.length >= maxRequestsPerWindow) {
     const oldestInWindow = previous[0];
@@ -526,7 +491,9 @@ function normalizeDeclaredMime(raw: string): string {
   return lower;
 }
 
-export function validateFoodImagePayload(body: unknown): ValidatedFoodImagePayload {
+export function validateFoodImagePayload(
+  body: unknown
+): ValidatedFoodImagePayload {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new PayloadValidationError(
       'Request body must be a valid JSON object.',
@@ -538,8 +505,11 @@ export function validateFoodImagePayload(body: unknown): ValidatedFoodImagePaylo
 
   const record = body as Record<string, unknown>;
   const rawMime =
-    typeof record.mimeType === 'string' ? normalizeDeclaredMime(record.mimeType) : '';
-  const rawImage = typeof record.imageBase64 === 'string' ? record.imageBase64.trim() : '';
+    typeof record.mimeType === 'string'
+      ? normalizeDeclaredMime(record.mimeType)
+      : '';
+  const rawImage =
+    typeof record.imageBase64 === 'string' ? record.imageBase64.trim() : '';
   const rawLang = record.language;
 
   if (rawLang !== undefined && rawLang !== 'en' && rawLang !== 'bn') {
@@ -560,7 +530,7 @@ export function validateFoodImagePayload(body: unknown): ValidatedFoodImagePaylo
     );
   }
 
-  let mimeType = rawMime as AllowedFoodImageMime;
+  const mimeType = rawMime as AllowedFoodImageMime;
 
   if (!rawImage) {
     throw new PayloadValidationError(
@@ -588,7 +558,10 @@ export function validateFoodImagePayload(body: unknown): ValidatedFoodImagePaylo
   }
 
   // Remove whitespace/newlines and normalize URL-safe base64 if present
-  cleanBase64 = cleanBase64.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  cleanBase64 = cleanBase64
+    .replace(/\s+/g, '')
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
 
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(cleanBase64)) {
     throw new PayloadValidationError(

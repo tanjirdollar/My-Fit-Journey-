@@ -434,13 +434,21 @@ export const AIFoodRecognitionModal: React.FC<AIFoodRecognitionModalProps> = ({
         if (formatted.isAuthFailure) {
           setRequiresAuthError(true);
         }
+        const vercelError = response.headers.get('x-vercel-error');
         setErrorMeta({
-          category: data?.category || (isHtmlResponse ? 'UNKNOWN_SERVER_ERROR' : undefined),
-          code: data?.code || `HTTP_${response.status}`,
-          stage: data?.stage,
+          category:
+            data?.category ||
+            (isHtmlResponse || !data ? 'UNKNOWN_SERVER_ERROR' : undefined),
+          code:
+            data?.code ||
+            (vercelError ? `VERCEL_${vercelError}` : `HTTP_${response.status}`),
+          stage:
+            data?.stage ||
+            (isHtmlResponse || !data ? 'REQUEST_RECEIVED' : undefined),
           correlationId:
             data?.correlationId ||
             response.headers.get('x-correlation-id') ||
+            response.headers.get('x-vercel-id') ||
             undefined,
         });
         setErrorMessage(formatted.message);

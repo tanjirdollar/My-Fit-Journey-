@@ -1,9 +1,22 @@
-import { GoogleGenAI, Type } from '@google/genai';
-import {
+import { createRequire } from 'module';
+import type {
   AIFoodComponent,
   AIFoodConfidence,
   AIFoodRecognitionResult,
 } from '../types/index.ts';
+import { logFoodRecognitionDiagnostic } from './firebaseAdmin.ts';
+
+if (typeof (globalThis as any).require === 'undefined') {
+  (globalThis as any).require = createRequire(import.meta.url);
+}
+
+let cachedGenAiModule: typeof import('@google/genai') | null = null;
+async function getGenAiSdk(): Promise<typeof import('@google/genai')> {
+  if (!cachedGenAiModule) {
+    cachedGenAiModule = await import('@google/genai');
+  }
+  return cachedGenAiModule;
+}
 
 export interface CoachRequestPayload {
   userQuery?: string;
@@ -38,7 +51,12 @@ export interface CoachResponsePayload {
 export async function generateCoachAdvice(
   payload: CoachRequestPayload
 ): Promise<CoachResponsePayload> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.API_KEY ||
+    ''
+  ).trim();
   const isBn = payload.language === 'bn';
 
   if (!apiKey) {
@@ -69,6 +87,7 @@ export async function generateCoachAdvice(
     };
   }
 
+  const { GoogleGenAI } = await getGenAiSdk();
   const ai = new GoogleGenAI({
     apiKey,
     httpOptions: {
@@ -184,6 +203,7 @@ export interface FoodImageAnalysisRequest {
   imageBase64: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
   language?: 'en' | 'bn';
+  correlationId?: string;
 }
 
 const DEFAULT_DISCLAIMER_BN =
@@ -372,7 +392,7 @@ export class FoodRecognitionServiceError extends Error {
     | 'GEMINI_SERVICE_UNAVAILABLE'
     | 'INVALID_AI_RESPONSE'
     | 'UNKNOWN_SERVER_ERROR';
-  stage: 'GEMINI_API_CONFIG' | 'GEMINI_VISION_REQUEST' | 'AI_RESPONSE_PARSING';
+  stage: 'GEMINI_API_REQUEST' | 'GEMINI_RESPONSE_PARSING';
   messageBn: string;
 
   constructor(options: {
@@ -386,7 +406,7 @@ export class FoodRecognitionServiceError extends Error {
       | 'GEMINI_SERVICE_UNAVAILABLE'
       | 'INVALID_AI_RESPONSE'
       | 'UNKNOWN_SERVER_ERROR';
-    stage: 'GEMINI_API_CONFIG' | 'GEMINI_VISION_REQUEST' | 'AI_RESPONSE_PARSING';
+    stage: 'GEMINI_API_REQUEST' | 'GEMINI_RESPONSE_PARSING';
   }) {
     super(options.messageEn);
     this.name = 'FoodRecognitionServiceError';
@@ -420,7 +440,12 @@ export function extractJsonFromModelText(rawText: string): string {
 export async function analyzeFoodImage(
   request: FoodImageAnalysisRequest
 ): Promise<AIFoodRecognitionResult> {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.API_KEY ||
+    ''
+  ).trim();
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
     throw new FoodRecognitionServiceError({
       messageEn:
@@ -430,10 +455,23 @@ export async function analyzeFoodImage(
       statusCode: 500,
       code: 'GEMINI_CONFIG_ERROR',
       category: 'GEMINI_CONFIG_FAILURE',
-      stage: 'GEMINI_API_CONFIG',
+      stage: 'GEMINI_API_REQUEST',
     });
   }
 
+  if (request.correlationId) {
+    logFoodRecognitionDiagnostic({
+      correlationId: request.correlationId,
+      stage: 'GEMINI_API_REQUEST',
+      statusCode: 200,
+      category: 'NONE',
+      code: 'GEMINI_REQUEST_STARTED',
+      message: 'Dispatching food image analysis request to Gemini API.',
+      meta: { mimeType: request.mimeType },
+    });
+  }
+
+  const { GoogleGenAI, Type } = await getGenAiSdk();
   const ai = new GoogleGenAI({
     apiKey,
     httpOptions: {
@@ -470,7 +508,9 @@ Return the analysis strictly following the JSON schema.`;
 
   const candidateModels = [
     'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
     'gemini-3.1-flash-lite-preview',
+    'gemini-3.8-flash',
   ];
 
   let response: any = null;
@@ -652,11 +692,14 @@ Return the analysis strictly following the JSON schema.`;
       const status = typeof err?.status === 'number' ? err.status : 0;
       const rawMsg = err instanceof Error ? err.message : String(err);
       const lowerMsg = rawMsg.toLowerCase();
-      // If 429 rate limit or 503 unavailable on primary model, try fallback model
+      // If 404, 429 rate limit, or 500/503 unavailable on primary model, try fallback model
       const isRetryableOnFallback =
+        status === 404 ||
         status === 429 ||
         status === 503 ||
         status === 500 ||
+        lowerMsg.includes('not found') ||
+        lowerMsg.includes('no longer available') ||
         lowerMsg.includes('resource_exhausted') ||
         lowerMsg.includes('quota') ||
         lowerMsg.includes('unavailable') ||
@@ -689,7 +732,7 @@ Return the analysis strictly following the JSON schema.`;
         statusCode: 500,
         code: 'GEMINI_CONFIG_ERROR',
         category: 'GEMINI_CONFIG_FAILURE',
-        stage: 'GEMINI_API_CONFIG',
+        stage: 'GEMINI_API_REQUEST',
       });
     }
 
@@ -707,7 +750,7 @@ Return the analysis strictly following the JSON schema.`;
         statusCode: 429,
         code: 'GEMINI_RATE_LIMIT',
         category: 'RATE_LIMIT_EXCEEDED',
-        stage: 'GEMINI_VISION_REQUEST',
+        stage: 'GEMINI_API_REQUEST',
       });
     }
 
@@ -719,7 +762,18 @@ Return the analysis strictly following the JSON schema.`;
       statusCode: 503,
       code: 'GEMINI_SERVICE_UNAVAILABLE',
       category: 'GEMINI_SERVICE_UNAVAILABLE',
-      stage: 'GEMINI_VISION_REQUEST',
+      stage: 'GEMINI_API_REQUEST',
+    });
+  }
+
+  if (request.correlationId) {
+    logFoodRecognitionDiagnostic({
+      correlationId: request.correlationId,
+      stage: 'GEMINI_RESPONSE_PARSING',
+      statusCode: 200,
+      category: 'NONE',
+      code: 'PARSING_STARTED',
+      message: 'Parsing structured JSON nutrition output from Gemini.',
     });
   }
 
@@ -734,7 +788,7 @@ Return the analysis strictly following the JSON schema.`;
       statusCode: 502,
       code: 'INVALID_AI_RESPONSE',
       category: 'INVALID_AI_RESPONSE',
-      stage: 'AI_RESPONSE_PARSING',
+      stage: 'GEMINI_RESPONSE_PARSING',
     });
   }
 
@@ -750,7 +804,7 @@ Return the analysis strictly following the JSON schema.`;
       statusCode: 502,
       code: 'INVALID_AI_RESPONSE',
       category: 'INVALID_AI_RESPONSE',
-      stage: 'AI_RESPONSE_PARSING',
+      stage: 'GEMINI_RESPONSE_PARSING',
     });
   }
 

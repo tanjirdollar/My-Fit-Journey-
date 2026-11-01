@@ -123,12 +123,21 @@ async function startServer() {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('X-Correlation-Id', correlationId);
 
-      // Stage 0: Client header check
+      // Stage 1: REQUEST_RECEIVED
+      logFoodRecognitionDiagnostic({
+        correlationId,
+        stage: 'REQUEST_RECEIVED',
+        statusCode: 200,
+        category: 'NONE',
+        code: 'REQUEST_RECEIVED',
+        message: 'Incoming POST /api/gemini/food-recognition request.',
+      });
+
       const clientHeader = req.headers['x-requested-with'];
       if (clientHeader !== 'MyFitJourneyClient') {
         logFoodRecognitionDiagnostic({
           correlationId,
-          stage: 'CLIENT_HEADER_CHECK',
+          stage: 'REQUEST_RECEIVED',
           statusCode: 403,
           category: 'AUTHENTICATION_FAILURE',
           code: 'FORBIDDEN_CLIENT',
@@ -140,17 +149,27 @@ async function startServer() {
           errorBn: 'নিরাপত্তা যাচাই ব্যর্থ হয়েছে: ক্লায়েন্ট অনুমোদন হেডার অনুপস্থিত।',
           code: 'FORBIDDEN_CLIENT',
           category: 'AUTHENTICATION_FAILURE',
-          stage: 'CLIENT_HEADER_CHECK',
+          stage: 'REQUEST_RECEIVED',
           correlationId,
         });
         return;
       }
 
-      // Stage 1: Verify Firebase ID token on the server using Firebase Admin SDK.
-      // Reject unauthenticated requests and never trust frontend-supplied userId.
+      // Stage 2 & 3: FIREBASE_ADMIN_INITIALIZATION & AUTH_TOKEN_VERIFICATION
       let verifiedUser: { uid: string; email?: string };
       try {
-        verifiedUser = await verifyFirebaseIdToken(req.headers.authorization);
+        verifiedUser = await verifyFirebaseIdToken(
+          req.headers.authorization,
+          correlationId
+        );
+        logFoodRecognitionDiagnostic({
+          correlationId,
+          stage: 'AUTH_TOKEN_VERIFICATION',
+          statusCode: 200,
+          category: 'NONE',
+          code: 'AUTH_VERIFIED',
+          message: 'Firebase ID token verified via Firebase Admin verifyIdToken().',
+        });
       } catch (err) {
         if (err instanceof AuthVerificationError) {
           logFoodRecognitionDiagnostic({
@@ -193,7 +212,7 @@ async function startServer() {
         return;
       }
 
-      // Stage 2: Enforce per-user rate limiting keyed strictly by verified Firebase UID
+      // Enforce per-user rate limiting keyed strictly by verified Firebase UID
       const rateLimit = checkUserRateLimit(verifiedUser.uid, 10, 60_000);
       res.setHeader('X-RateLimit-Remaining', String(rateLimit.remaining));
       if (!rateLimit.allowed) {
@@ -222,10 +241,22 @@ async function startServer() {
         return;
       }
 
-      // Stage 3: Validate image MIME type, magic bytes, file size, and payload structure
+      // Stage 4: IMAGE_PAYLOAD_VALIDATION
       let validatedPayload;
       try {
         validatedPayload = validateFoodImagePayload(req.body);
+        logFoodRecognitionDiagnostic({
+          correlationId,
+          stage: 'IMAGE_PAYLOAD_VALIDATION',
+          statusCode: 200,
+          category: 'NONE',
+          code: 'IMAGE_VALIDATED',
+          message: 'Image MIME type, magic bytes, and size validated.',
+          meta: {
+            mimeType: validatedPayload.mimeType,
+            byteLength: validatedPayload.byteLength,
+          },
+        });
       } catch (err) {
         if (err instanceof PayloadValidationError) {
           logFoodRecognitionDiagnostic({
@@ -268,20 +299,21 @@ async function startServer() {
         return;
       }
 
-      // Stage 4: Analyze food image via server-side Gemini (never sending personal health records)
+      // Stage 5, 6, 7: GEMINI_API_REQUEST, GEMINI_RESPONSE_PARSING & RESPONSE_SENT
       try {
         const analysisResult = await analyzeFoodImage({
           imageBase64: validatedPayload.cleanBase64,
           mimeType: validatedPayload.mimeType,
           language: validatedPayload.language,
+          correlationId,
         });
         logFoodRecognitionDiagnostic({
           correlationId,
-          stage: 'REQUEST_COMPLETED',
+          stage: 'RESPONSE_SENT',
           statusCode: 200,
           category: 'NONE',
           code: 'OK',
-          message: 'Food image analyzed successfully.',
+          message: 'Food image analyzed successfully and response sent.',
           meta: {
             mimeType: validatedPayload.mimeType,
             byteLength: validatedPayload.byteLength,
@@ -323,7 +355,7 @@ async function startServer() {
             : 'Unknown server error during food image analysis.';
         logFoodRecognitionDiagnostic({
           correlationId,
-          stage: 'GEMINI_VISION_REQUEST',
+          stage: 'GEMINI_API_REQUEST',
           statusCode: 500,
           category: 'UNKNOWN_SERVER_ERROR',
           code: 'INTERNAL_SERVER_ERROR',
@@ -337,7 +369,7 @@ async function startServer() {
             'সার্ভারে একটি অপ্রত্যাশিত ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন বা ম্যানুয়ালি খাবারের তথ্য লিখুন।',
           code: 'INTERNAL_SERVER_ERROR',
           category: 'UNKNOWN_SERVER_ERROR',
-          stage: 'GEMINI_VISION_REQUEST',
+          stage: 'GEMINI_API_REQUEST',
           correlationId,
         });
       }
@@ -399,7 +431,7 @@ async function startServer() {
       if (req.path.startsWith('/api/')) {
         logFoodRecognitionDiagnostic({
           correlationId,
-          stage: 'GEMINI_VISION_REQUEST',
+          stage: 'GEMINI_API_REQUEST',
           statusCode: 500,
           category: 'UNKNOWN_SERVER_ERROR',
           code: 'INTERNAL_SERVER_ERROR',
@@ -411,7 +443,7 @@ async function startServer() {
           errorBn: 'সার্ভারে অভ্যন্তরীণ ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন বা ম্যানুয়ালি লিখুন।',
           code: 'INTERNAL_SERVER_ERROR',
           category: 'UNKNOWN_SERVER_ERROR',
-          stage: 'GEMINI_VISION_REQUEST',
+          stage: 'GEMINI_API_REQUEST',
           correlationId,
         });
         return;
@@ -429,7 +461,7 @@ async function startServer() {
       errorBn: `এপিআই এন্ডপয়েন্ট পাওয়া যায়নি (${req.method} ${req.path})।`,
       code: 'ENDPOINT_NOT_FOUND',
       category: 'UNKNOWN_SERVER_ERROR',
-      stage: 'CLIENT_HEADER_CHECK',
+      stage: 'REQUEST_RECEIVED',
       correlationId,
     });
   });

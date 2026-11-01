@@ -18,21 +18,99 @@ export const config = {
       sizeLimit: '6mb',
     },
   },
+  maxDuration: 30,
 };
+
+const MAX_RAW_BODY_BYTES = 6 * 1024 * 1024; // 6 MB JSON payload limit
+
+/**
+ * Safely parses the request JSON body exactly once across Vercel Serverless
+ * and Node.js IncomingMessage runtimes while preserving Base64 image payloads.
+ */
+async function parseRequestBodyOnce(req: any): Promise<unknown> {
+  if (req.body !== undefined && req.body !== null) {
+    if (Buffer.isBuffer(req.body)) {
+      return JSON.parse(req.body.toString('utf8'));
+    }
+    if (typeof req.body === 'string') {
+      return JSON.parse(req.body);
+    }
+    if (typeof req.body === 'object') {
+      return req.body;
+    }
+  }
+
+  if (typeof req.on !== 'function') {
+    return {};
+  }
+
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+
+    req.on('data', (chunk: Buffer | string) => {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, 'utf8');
+      totalBytes += buf.byteLength;
+      if (totalBytes > MAX_RAW_BODY_BYTES) {
+        reject(
+          new PayloadValidationError(
+            'Image payload is too large. Please upload a smaller image (under 4 MB).',
+            413,
+            'PAYLOAD_TOO_LARGE',
+            'ছবির ফাইল সাইজ অনেক বড় (৪ মেগাবাইটের বেশি)। অনুগ্রহ করে অপেক্ষাকৃত ছোট ছবি নির্বাচন করুন।'
+          )
+        );
+        return;
+      }
+      chunks.push(buf);
+    });
+
+    req.on('end', () => {
+      try {
+        const raw = Buffer.concat(chunks).toString('utf8').trim();
+        resolve(raw ? JSON.parse(raw) : {});
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    req.on('error', (err: Error) => {
+      reject(err);
+    });
+  });
+}
 
 export default async function handler(req: any, res: any) {
   const correlationId = createCorrelationId();
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('X-Correlation-Id', correlationId);
 
+  // Stage 1: REQUEST_RECEIVED
+  logFoodRecognitionDiagnostic({
+    correlationId,
+    stage: 'REQUEST_RECEIVED',
+    statusCode: 200,
+    category: 'NONE',
+    code: 'REQUEST_RECEIVED',
+    message: `Incoming ${String(req.method || 'UNKNOWN')} /api/gemini/food-recognition request.`,
+  });
+
   if (req.method !== 'POST') {
+    logFoodRecognitionDiagnostic({
+      correlationId,
+      stage: 'REQUEST_RECEIVED',
+      statusCode: 405,
+      category: 'UNKNOWN_SERVER_ERROR',
+      code: 'METHOD_NOT_ALLOWED',
+      message: `Method ${String(req.method)} not allowed.`,
+    });
     res.status(405).json({
       error: 'Method Not Allowed. Use POST.',
       errorEn: 'Method Not Allowed. Use POST.',
       errorBn: 'অনুমোদিত মেথড নয় (POST ব্যবহার করুন)।',
       code: 'METHOD_NOT_ALLOWED',
       category: 'UNKNOWN_SERVER_ERROR',
-      stage: 'CLIENT_HEADER_CHECK',
+      stage: 'REQUEST_RECEIVED',
       correlationId,
     });
     return;
@@ -42,7 +120,7 @@ export default async function handler(req: any, res: any) {
   if (clientHeader !== 'MyFitJourneyClient') {
     logFoodRecognitionDiagnostic({
       correlationId,
-      stage: 'CLIENT_HEADER_CHECK',
+      stage: 'REQUEST_RECEIVED',
       statusCode: 403,
       category: 'AUTHENTICATION_FAILURE',
       code: 'FORBIDDEN_CLIENT',
@@ -54,15 +132,27 @@ export default async function handler(req: any, res: any) {
       errorBn: 'নিরাপত্তা যাচাই ব্যর্থ হয়েছে: ক্লায়েন্ট অনুমোদন হেডার অনুপস্থিত।',
       code: 'FORBIDDEN_CLIENT',
       category: 'AUTHENTICATION_FAILURE',
-      stage: 'CLIENT_HEADER_CHECK',
+      stage: 'REQUEST_RECEIVED',
       correlationId,
     });
     return;
   }
 
+  // Stage 2 & 3: FIREBASE_ADMIN_INITIALIZATION & AUTH_TOKEN_VERIFICATION
   let verifiedUser: { uid: string; email?: string };
   try {
-    verifiedUser = await verifyFirebaseIdToken(req.headers?.authorization);
+    verifiedUser = await verifyFirebaseIdToken(
+      req.headers?.authorization,
+      correlationId
+    );
+    logFoodRecognitionDiagnostic({
+      correlationId,
+      stage: 'AUTH_TOKEN_VERIFICATION',
+      statusCode: 200,
+      category: 'NONE',
+      code: 'AUTH_VERIFIED',
+      message: 'Firebase ID token verified via Firebase Admin verifyIdToken().',
+    });
   } catch (err) {
     if (err instanceof AuthVerificationError) {
       logFoodRecognitionDiagnostic({
@@ -84,7 +174,8 @@ export default async function handler(req: any, res: any) {
       });
       return;
     }
-    const fallbackMsg = 'Unauthorized: Valid Firebase authentication token required.';
+    const fallbackMsg =
+      'Unauthorized: Valid Firebase authentication token required.';
     logFoodRecognitionDiagnostic({
       correlationId,
       stage: 'AUTH_TOKEN_VERIFICATION',
@@ -134,11 +225,23 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // Stage 4: IMAGE_PAYLOAD_VALIDATION
   let validatedPayload;
   try {
-    const parsedBody =
-      typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const parsedBody = await parseRequestBodyOnce(req);
     validatedPayload = validateFoodImagePayload(parsedBody);
+    logFoodRecognitionDiagnostic({
+      correlationId,
+      stage: 'IMAGE_PAYLOAD_VALIDATION',
+      statusCode: 200,
+      category: 'NONE',
+      code: 'IMAGE_VALIDATED',
+      message: 'Image MIME type, magic bytes, and size validated.',
+      meta: {
+        mimeType: validatedPayload.mimeType,
+        byteLength: validatedPayload.byteLength,
+      },
+    });
   } catch (err) {
     if (err instanceof PayloadValidationError) {
       logFoodRecognitionDiagnostic({
@@ -182,19 +285,21 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // Stage 5, 6, 7: GEMINI_API_REQUEST, GEMINI_RESPONSE_PARSING & RESPONSE_SENT
   try {
     const analysisResult = await analyzeFoodImage({
       imageBase64: validatedPayload.cleanBase64,
       mimeType: validatedPayload.mimeType,
       language: validatedPayload.language,
+      correlationId,
     });
     logFoodRecognitionDiagnostic({
       correlationId,
-      stage: 'REQUEST_COMPLETED',
+      stage: 'RESPONSE_SENT',
       statusCode: 200,
       category: 'NONE',
       code: 'OK',
-      message: 'Food image analyzed successfully.',
+      message: 'Food image analyzed successfully and response sent.',
       meta: {
         mimeType: validatedPayload.mimeType,
         byteLength: validatedPayload.byteLength,
@@ -231,7 +336,7 @@ export default async function handler(req: any, res: any) {
         : 'Unknown server error during food image analysis.';
     logFoodRecognitionDiagnostic({
       correlationId,
-      stage: 'GEMINI_VISION_REQUEST',
+      stage: 'GEMINI_API_REQUEST',
       statusCode: 500,
       category: 'UNKNOWN_SERVER_ERROR',
       code: 'INTERNAL_SERVER_ERROR',
@@ -245,7 +350,7 @@ export default async function handler(req: any, res: any) {
         'সার্ভারে একটি অপ্রত্যাশিত ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন বা ম্যানুয়ালি খাবারের তথ্য লিখুন।',
       code: 'INTERNAL_SERVER_ERROR',
       category: 'UNKNOWN_SERVER_ERROR',
-      stage: 'GEMINI_VISION_REQUEST',
+      stage: 'GEMINI_API_REQUEST',
       correlationId,
     });
   }
