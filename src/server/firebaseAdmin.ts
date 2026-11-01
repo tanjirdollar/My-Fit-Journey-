@@ -1,4 +1,6 @@
 import { createRequire } from 'module';
+import * as firebaseAdminAppNamespace from 'firebase-admin/app';
+import * as firebaseAdminAuthNamespace from 'firebase-admin/auth';
 import type { App } from 'firebase-admin/app';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import crypto from 'crypto';
@@ -15,8 +17,20 @@ function loadFirebaseAdminSdk(): {
   initializeApp: typeof import('firebase-admin/app').initializeApp;
   getAuth: typeof import('firebase-admin/auth').getAuth;
 } {
-  const appModule = require('firebase-admin/app');
-  const authModule = require('firebase-admin/auth');
+  const appModule: any =
+    typeof firebaseAdminAppNamespace?.getApps === 'function'
+      ? firebaseAdminAppNamespace
+      : typeof (firebaseAdminAppNamespace as any)?.default?.getApps === 'function'
+      ? (firebaseAdminAppNamespace as any).default
+      : require('firebase-admin/app');
+
+  const authModule: any =
+    typeof firebaseAdminAuthNamespace?.getAuth === 'function'
+      ? firebaseAdminAuthNamespace
+      : typeof (firebaseAdminAuthNamespace as any)?.default?.getAuth === 'function'
+      ? (firebaseAdminAuthNamespace as any).default
+      : require('firebase-admin/auth');
+
   return {
     getApps: appModule.getApps,
     initializeApp: appModule.initializeApp,
